@@ -2,4 +2,6 @@
 
 Agent for monitoring business processes via Airflow, capable of sending messages to employees on WhatsApp, using AWS EventBridge
 
-![architecture](architecture.png)
+![architecture](docs/architecture.png)
+
+![flow](docs/flow.png)
