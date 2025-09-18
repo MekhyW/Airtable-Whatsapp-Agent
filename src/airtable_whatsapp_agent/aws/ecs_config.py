@@ -5,11 +5,10 @@ AWS ECS deployment configuration and task definitions.
 import json
 import logging
 from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from enum import Enum
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
-
 from ..config import Settings
 
 
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 class LaunchType(Enum):
     """ECS launch types."""
-    
     EC2 = "EC2"
     FARGATE = "FARGATE"
     EXTERNAL = "EXTERNAL"
@@ -26,7 +24,6 @@ class LaunchType(Enum):
 
 class NetworkMode(Enum):
     """ECS network modes."""
-    
     BRIDGE = "bridge"
     HOST = "host"
     AWS_VPC = "awsvpc"
@@ -35,7 +32,6 @@ class NetworkMode(Enum):
 
 class LogDriver(Enum):
     """ECS log drivers."""
-    
     JSON_FILE = "json-file"
     SYSLOG = "syslog"
     JOURNALD = "journald"
@@ -49,7 +45,6 @@ class LogDriver(Enum):
 @dataclass
 class ContainerDefinition:
     """ECS container definition."""
-    
     name: str
     image: str
     memory: Optional[int] = None
@@ -73,7 +68,6 @@ class ContainerDefinition:
             "image": self.image,
             "essential": self.essential
         }
-        
         if self.memory:
             definition["memory"] = self.memory
         if self.memory_reservation:
@@ -98,14 +92,12 @@ class ContainerDefinition:
             definition["workingDirectory"] = self.working_directory
         if self.user:
             definition["user"] = self.user
-            
         return definition
 
 
 @dataclass
 class ECSTaskDefinition:
     """ECS task definition configuration."""
-    
     family: str
     containers: List[ContainerDefinition]
     task_role_arn: Optional[str] = None
@@ -129,7 +121,6 @@ class ECSTaskDefinition:
             "networkMode": self.network_mode.value,
             "requiresCompatibilities": [comp.value for comp in self.requires_compatibilities]
         }
-        
         if self.task_role_arn:
             definition["taskRoleArn"] = self.task_role_arn
         if self.execution_role_arn:
@@ -140,49 +131,25 @@ class ECSTaskDefinition:
             definition["memory"] = self.memory
         if self.tags:
             definition["tags"] = self.tags
-            
         return definition
 
 
 class ECSDeploymentConfig:
     """ECS deployment configuration and management."""
-    
     def __init__(self, settings: Settings):
         """Initialize ECS deployment configuration."""
         self.settings = settings
         self.region = settings.aws_region
         self.account_id = settings.aws_account_id
-        
-        # Initialize AWS clients
-        self.ecs_client = boto3.client(
-            'ecs',
-            region_name=self.region,
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key
-        )
-        
-        self.ec2_client = boto3.client(
-            'ec2',
-            region_name=self.region,
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key
-        )
-        
-        self.logs_client = boto3.client(
-            'logs',
-            region_name=self.region,
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key
-        )
-        
-        # Configuration
+        self.ecs_client = boto3.client('ecs', region_name=self.region, aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key)
+        self.ec2_client = boto3.client('ec2', region_name=self.region, aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key)
+        self.logs_client = boto3.client('logs', region_name=self.region, aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key)
         self.cluster_name = f"{settings.app_name}-cluster"
         self.service_name = f"{settings.app_name}-service"
         self.task_family = f"{settings.app_name}-task"
         
     def create_main_task_definition(self) -> ECSTaskDefinition:
         """Create the main application task definition."""
-        # Main application container
         main_container = ContainerDefinition(
             name="main-app",
             image=f"{self.account_id}.dkr.ecr.{self.region}.amazonaws.com/{self.settings.app_name}:latest",
@@ -230,8 +197,6 @@ class ECSDeploymentConfig:
                 "startPeriod": 60
             }
         )
-        
-        # Sidecar container for monitoring
         monitoring_container = ContainerDefinition(
             name="monitoring",
             image="amazon/cloudwatch-agent:latest",
@@ -250,7 +215,6 @@ class ECSDeploymentConfig:
                 }
             }
         )
-        
         return ECSTaskDefinition(
             family=self.task_family,
             containers=[main_container, monitoring_container],
@@ -301,7 +265,6 @@ class ECSDeploymentConfig:
             },
             command=["python", "-m", "airtable_whatsapp_agent.worker"]
         )
-        
         return ECSTaskDefinition(
             family=f"{self.task_family}-worker",
             containers=[worker_container],
@@ -367,12 +330,9 @@ class ECSDeploymentConfig:
         """Register a task definition with ECS."""
         try:
             response = self.ecs_client.register_task_definition(**task_definition.to_dict())
-            
             task_def_arn = response['taskDefinition']['taskDefinitionArn']
             logger.info(f"Registered task definition: {task_def_arn}")
-            
             return task_def_arn
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error registering task definition: {str(e)}")
             return None
@@ -394,31 +354,20 @@ class ECSDeploymentConfig:
                     }
                 ]
             )
-            
             cluster_arn = response['cluster']['clusterArn']
             logger.info(f"Created ECS cluster: {cluster_arn}")
-            
             return cluster_arn
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error creating ECS cluster: {str(e)}")
             return None
             
-    async def create_service(
-        self,
-        task_definition_arn: str,
-        desired_count: int = 2,
-        subnet_ids: List[str] = None,
-        security_group_ids: List[str] = None
-    ) -> Optional[str]:
+    async def create_service(self, task_definition_arn: str, desired_count: int = 2, subnet_ids: List[str] = None, security_group_ids: List[str] = None) -> Optional[str]:
         """Create ECS service."""
         try:
-            # Get default VPC and subnets if not provided
             if not subnet_ids:
                 subnet_ids = await self._get_default_subnets()
             if not security_group_ids:
                 security_group_ids = await self._get_default_security_groups()
-                
             service_config = {
                 "cluster": self.cluster_name,
                 "serviceName": self.service_name,
@@ -449,14 +398,10 @@ class ECSDeploymentConfig:
                     {"key": "Environment", "value": self.settings.environment}
                 ]
             }
-            
             response = self.ecs_client.create_service(**service_config)
-            
             service_arn = response['service']['serviceArn']
             logger.info(f"Created ECS service: {service_arn}")
-            
             return service_arn
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error creating ECS service: {str(e)}")
             return None
@@ -471,7 +416,6 @@ class ECSDeploymentConfig:
             )
             
             return [subnet['SubnetId'] for subnet in response['Subnets']]
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error getting default subnets: {str(e)}")
             return []
@@ -486,7 +430,6 @@ class ECSDeploymentConfig:
             )
             
             return [sg['GroupId'] for sg in response['SecurityGroups']]
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error getting default security groups: {str(e)}")
             return []
@@ -498,7 +441,6 @@ class ECSDeploymentConfig:
             f"/ecs/{self.settings.app_name}-worker",
             f"/ecs/{self.settings.app_name}-monitoring"
         ]
-        
         for log_group in log_groups:
             try:
                 self.logs_client.create_log_group(
@@ -509,7 +451,6 @@ class ECSDeploymentConfig:
                     }
                 )
                 logger.info(f"Created log group: {log_group}")
-                
             except ClientError as e:
                 if e.response['Error']['Code'] != 'ResourceAlreadyExistsException':
                     logger.error(f"Error creating log group {log_group}: {str(e)}")
@@ -517,33 +458,21 @@ class ECSDeploymentConfig:
     async def deploy_full_stack(self) -> Dict[str, Any]:
         """Deploy the complete ECS stack."""
         results = {}
-        
         try:
-            # Create log groups
             await self.create_log_groups()
             results["log_groups"] = "created"
-            
-            # Create cluster
             cluster_arn = await self.create_cluster()
             results["cluster"] = cluster_arn
-            
-            # Register main task definition
             main_task_def = self.create_main_task_definition()
             main_task_arn = await self.register_task_definition(main_task_def)
             results["main_task_definition"] = main_task_arn
-            
-            # Register worker task definition
             worker_task_def = self.create_worker_task_definition()
             worker_task_arn = await self.register_task_definition(worker_task_def)
             results["worker_task_definition"] = worker_task_arn
-            
-            # Create main service
             if main_task_arn:
                 service_arn = await self.create_service(main_task_arn)
                 results["service"] = service_arn
-                
             return results
-            
         except Exception as e:
             logger.error(f"Error deploying ECS stack: {str(e)}")
             results["error"] = str(e)
@@ -605,5 +534,4 @@ class ECSDeploymentConfig:
                 }
             }
         }
-        
         return template

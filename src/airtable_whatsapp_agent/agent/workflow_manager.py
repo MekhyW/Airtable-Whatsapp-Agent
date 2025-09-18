@@ -13,8 +13,8 @@ from .state_manager import StateManager, AgentGraphState
 from .graph_builder import GraphBuilder
 from .tool_registry import ToolRegistry
 from ..models.agent import AgentState, WorkflowStatus
-
 from ..mcp.manager import MCPServerManager
+from ..config import Settings
 
 
 logger = logging.getLogger(__name__)
@@ -23,16 +23,19 @@ logger = logging.getLogger(__name__)
 class WorkflowManager:
     """Manages agent workflows and concurrent session execution."""
     
-    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, max_concurrent_sessions: int = 10, session_timeout_minutes: int = 30):
+    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, settings: Optional[Settings] = None, max_concurrent_sessions: int = 10, session_timeout_minutes: int = 30, model_name: str = "gpt-4-turbo-preview", temperature: float = 0.5, max_tokens: int = 2000):
         """Initialize workflow manager."""
         self.logger = logging.getLogger(__name__)
         self.mcp_manager = mcp_manager
         self.openai_api_key = openai_api_key
+        self.model_name = model_name
+        self.temperature = temperature
+        self.max_tokens = max_tokens
         self.max_concurrent_sessions = max_concurrent_sessions
         self.session_timeout = timedelta(minutes=session_timeout_minutes)
         self.state_manager = StateManager()
-        self.tool_registry = ToolRegistry(mcp_manager)
-        self.graph_builder = GraphBuilder(self.state_manager, self.tool_registry, openai_api_key)
+        self.tool_registry = ToolRegistry(mcp_manager, settings=settings)
+        self.graph_builder = GraphBuilder(self.state_manager, self.tool_registry, openai_api_key, model_name=model_name, temperature=temperature, max_tokens=max_tokens)
         self.active_workflows: Dict[str, Dict[str, Any]] = {}
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent_sessions)
         self.metrics = {
@@ -248,10 +251,10 @@ class WorkflowManager:
 class AutonomousAgent:
     """Main autonomous agent class that coordinates all components."""
     
-    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, **kwargs):
+    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, settings: Optional[Settings] = None, **kwargs):
         """Initialize autonomous agent."""
         self.logger = logging.getLogger(__name__)
-        self.workflow_manager = WorkflowManager(mcp_manager=mcp_manager, openai_api_key=openai_api_key, **kwargs)
+        self.workflow_manager = WorkflowManager(mcp_manager=mcp_manager, openai_api_key=openai_api_key, settings=settings, **kwargs)
         
     async def process_message(self, user_phone: str, message: str, message_type: str = "text", session_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> str:
         """Process incoming message from user."""

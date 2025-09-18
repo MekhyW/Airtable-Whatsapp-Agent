@@ -4,14 +4,12 @@ AWS EventBridge integration for scheduled tasks and event-driven workflows.
 
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Callable, Union
+from datetime import datetime
+from typing import Dict, Any, List, Optional, Callable
 from enum import Enum
 from dataclasses import dataclass, asdict
-import asyncio
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
-
 from ..config import Settings
 
 
@@ -20,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 class ScheduleType(Enum):
     """Types of schedule expressions."""
-    
     RATE = "rate"
     CRON = "cron"
     ONE_TIME = "one_time"
@@ -28,7 +25,6 @@ class ScheduleType(Enum):
 
 class TaskStatus(Enum):
     """Status of scheduled tasks."""
-    
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
     PENDING = "PENDING"
@@ -40,7 +36,6 @@ class TaskStatus(Enum):
 @dataclass
 class ScheduledTask:
     """Scheduled task configuration."""
-    
     name: str
     description: str
     schedule_expression: str
@@ -60,12 +55,8 @@ class ScheduledTask:
             "ScheduleExpression": self.schedule_expression,
             "State": "ENABLED" if self.enabled else "DISABLED"
         }
-        
         if self.tags:
-            rule_config["Tags"] = [
-                {"Key": k, "Value": v} for k, v in self.tags.items()
-            ]
-            
+            rule_config["Tags"] = [{"Key": k, "Value": v} for k, v in self.tags.items()]
         return rule_config
         
     def to_target_config(self, target_arn: str) -> Dict[str, Any]:
@@ -81,39 +72,30 @@ class ScheduledTask:
                 "timeout_minutes": self.timeout_minutes
             })
         }
-        
         return target_config
 
 
 class EventBridgeScheduler:
     """AWS EventBridge scheduler for managing scheduled tasks."""
-    
     def __init__(self, settings: Settings):
         """Initialize EventBridge scheduler."""
         self.settings = settings
         self.region = settings.aws_region
         self.account_id = settings.aws_account_id
-        
-        # Initialize AWS clients
         self.eventbridge_client = boto3.client(
             'events',
             region_name=self.region,
             aws_access_key_id=settings.aws_access_key_id,
             aws_secret_access_key=settings.aws_secret_access_key
         )
-        
         self.lambda_client = boto3.client(
             'lambda',
             region_name=self.region,
             aws_access_key_id=settings.aws_access_key_id,
             aws_secret_access_key=settings.aws_secret_access_key
         )
-        
-        # Task registry
         self.tasks: Dict[str, ScheduledTask] = {}
         self.task_handlers: Dict[str, Callable] = {}
-        
-        # Default scheduled tasks
         self._register_default_tasks()
         
     def _register_default_tasks(self):
@@ -161,7 +143,6 @@ class EventBridgeScheduler:
                 tags={"Type": "Reporting", "Component": "Analytics"}
             )
         ]
-        
         for task in default_tasks:
             self.register_task(task)
             
@@ -180,35 +161,18 @@ class EventBridgeScheduler:
         if task_name not in self.tasks:
             logger.error(f"Task not found: {task_name}")
             return False
-            
         task = self.tasks[task_name]
-        
         try:
-            # Create EventBridge rule
             rule_config = task.to_eventbridge_rule()
-            
             response = self.eventbridge_client.put_rule(**rule_config)
             rule_arn = response['RuleArn']
-            
             logger.info(f"Created EventBridge rule: {rule_arn}")
-            
-            # Create Lambda function if it doesn't exist
-            lambda_arn = await self._ensure_lambda_function()
-            
-            # Add target to rule
+            lambda_arn = await self._ensure_lambda_function() # Create Lambda function if it doesn't exist
             target_config = task.to_target_config(lambda_arn)
-            
-            self.eventbridge_client.put_targets(
-                Rule=task.name,
-                Targets=[target_config]
-            )
-            
-            # Add permission for EventBridge to invoke Lambda
+            self.eventbridge_client.put_targets(Rule=task.name, Targets=[target_config])
             await self._add_lambda_permission(task.name, rule_arn)
-            
             logger.info(f"Successfully created schedule for task: {task_name}")
             return True
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error creating schedule for {task_name}: {str(e)}")
             return False
@@ -216,22 +180,17 @@ class EventBridgeScheduler:
     async def _ensure_lambda_function(self) -> str:
         """Ensure Lambda function exists for task execution."""
         function_name = f"{self.settings.app_name}-scheduler"
-        
         try:
-            # Check if function exists
             response = self.lambda_client.get_function(FunctionName=function_name)
             return response['Configuration']['FunctionArn']
-            
         except ClientError as e:
             if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                # Function doesn't exist, create it
-                return await self._create_lambda_function(function_name)
+                return await self._create_lambda_function(function_name)  # Function doesn't exist, create it
             else:
                 raise
                 
     async def _create_lambda_function(self, function_name: str) -> str:
         """Create Lambda function for task execution."""
-        # Lambda function code
         lambda_code = '''
 import json
 import boto3
@@ -276,7 +235,6 @@ def lambda_handler(event, context):
             })
         }
 '''
-        
         try:
             response = self.lambda_client.create_function(
                 FunctionName=function_name,
@@ -293,9 +251,7 @@ def lambda_handler(event, context):
                     'Environment': self.settings.environment
                 }
             )
-            
             return response['FunctionArn']
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error creating Lambda function: {str(e)}")
             raise
@@ -303,7 +259,6 @@ def lambda_handler(event, context):
     async def _add_lambda_permission(self, rule_name: str, rule_arn: str):
         """Add permission for EventBridge to invoke Lambda."""
         function_name = f"{self.settings.app_name}-scheduler"
-        
         try:
             self.lambda_client.add_permission(
                 FunctionName=function_name,
@@ -314,40 +269,27 @@ def lambda_handler(event, context):
             )
         except ClientError as e:
             if e.response['Error']['Code'] != 'ResourceConflictException':
-                # Ignore if permission already exists
-                raise
+                raise # Ignore if permission already exists
                 
     async def update_schedule(self, task_name: str, **updates) -> bool:
         """Update an existing schedule."""
         if task_name not in self.tasks:
             logger.error(f"Task not found: {task_name}")
             return False
-            
-        # Update task configuration
         task = self.tasks[task_name]
         for key, value in updates.items():
             if hasattr(task, key):
                 setattr(task, key, value)
-                
-        # Recreate the schedule
         await self.delete_schedule(task_name)
         return await self.create_schedule(task_name)
         
     async def delete_schedule(self, task_name: str) -> bool:
         """Delete a schedule."""
         try:
-            # Remove targets first
-            self.eventbridge_client.remove_targets(
-                Rule=task_name,
-                Ids=[f"{task_name}-target"]
-            )
-            
-            # Delete rule
+            self.eventbridge_client.remove_targets(Rule=task_name, Ids=[f"{task_name}-target"])
             self.eventbridge_client.delete_rule(Name=task_name)
-            
             logger.info(f"Deleted schedule for task: {task_name}")
             return True
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error deleting schedule for {task_name}: {str(e)}")
             return False
@@ -365,7 +307,6 @@ def lambda_handler(event, context):
         try:
             response = self.eventbridge_client.list_rules()
             rules = response.get('Rules', [])
-            
             schedules = []
             for rule in rules:
                 if rule['Name'] in self.tasks:
@@ -377,9 +318,7 @@ def lambda_handler(event, context):
                         'state': rule.get('State', ''),
                         'task_config': asdict(task)
                     })
-                    
             return schedules
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error listing schedules: {str(e)}")
             return []
@@ -388,7 +327,6 @@ def lambda_handler(event, context):
         """Get status of a specific schedule."""
         try:
             response = self.eventbridge_client.describe_rule(Name=task_name)
-            
             return {
                 'name': response['Name'],
                 'description': response.get('Description', ''),
@@ -398,7 +336,6 @@ def lambda_handler(event, context):
                 'created_by': response.get('CreatedBy', ''),
                 'event_bus_name': response.get('EventBusName', 'default')
             }
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error getting schedule status for {task_name}: {str(e)}")
             return None
@@ -408,11 +345,8 @@ def lambda_handler(event, context):
         if task_name not in self.tasks:
             logger.error(f"Task not found: {task_name}")
             return False
-            
         task = self.tasks[task_name]
-        
         try:
-            # Create a one-time event
             event_detail = {
                 'task_name': task.name,
                 'function': task.target_function,
@@ -420,8 +354,7 @@ def lambda_handler(event, context):
                 'triggered_manually': True,
                 'timestamp': datetime.utcnow().isoformat()
             }
-            
-            response = self.eventbridge_client.put_events(
+            self.eventbridge_client.put_events(
                 Entries=[
                     {
                         'Source': f'{self.settings.app_name}.scheduler',
@@ -431,10 +364,8 @@ def lambda_handler(event, context):
                     }
                 ]
             )
-            
             logger.info(f"Manually triggered task: {task_name}")
             return True
-            
         except (ClientError, BotoCoreError) as e:
             logger.error(f"Error triggering task {task_name}: {str(e)}")
             return False
@@ -443,23 +374,18 @@ def lambda_handler(event, context):
         """Execute a task locally (for testing)."""
         if task_name not in self.tasks:
             return {"error": f"Task not found: {task_name}"}
-            
         task = self.tasks[task_name]
-        
         if task.target_function not in self.task_handlers:
             return {"error": f"Handler not found for function: {task.target_function}"}
-            
         try:
             handler = self.task_handlers[task.target_function]
             result = await handler(task.payload or {})
-            
             return {
                 "success": True,
                 "task_name": task_name,
                 "function": task.target_function,
                 "result": result
             }
-            
         except Exception as e:
             logger.error(f"Error executing task {task_name} locally: {str(e)}")
             return {
@@ -471,17 +397,13 @@ def lambda_handler(event, context):
     async def setup_all_schedules(self) -> Dict[str, bool]:
         """Set up all registered schedules."""
         results = {}
-        
         for task_name in self.tasks:
             results[task_name] = await self.create_schedule(task_name)
-            
         return results
         
     async def cleanup_all_schedules(self) -> Dict[str, bool]:
         """Clean up all schedules."""
         results = {}
-        
         for task_name in self.tasks:
             results[task_name] = await self.delete_schedule(task_name)
-            
         return results

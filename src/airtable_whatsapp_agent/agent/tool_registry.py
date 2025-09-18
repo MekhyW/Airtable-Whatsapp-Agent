@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from ..models.agent import ToolExecutionResult
 from ..mcp.manager import MCPServerManager
+from ..config import Settings
+from ..aws.eventbridge import EventBridgeScheduler, ScheduledTask, ScheduleType
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +38,18 @@ class ToolDefinition:
 class ToolRegistry:
     """Registry of tools available to the autonomous agent."""
     
-    def __init__(self, mcp_manager: MCPServerManager):
+    def __init__(self, mcp_manager: MCPServerManager, settings: Optional[Settings] = None):
         """Initialize tool registry."""
         self.logger = logging.getLogger(__name__)
         self.mcp_manager = mcp_manager
+        self.settings = settings
         self.tools: Dict[str, ToolDefinition] = {}
+        self.eventbridge_scheduler = None
+        if self.settings:
+            try:
+                self.eventbridge_scheduler = EventBridgeScheduler(self.settings)
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize EventBridge scheduler: {e}")
         self._register_default_tools()
         
     def _register_default_tools(self):
@@ -300,7 +309,7 @@ class ToolRegistry:
                 available.append(tool)
         return available
         
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], user_permissions: List[str]) -> ToolExecutionResult:
+    async def execute_tool(self, tool_name: str, parameters: Dict[str, Any], user_permissions: List[str]) -> ToolExecutionResult:
         """Execute a tool with given parameters."""
         tool = self.tools.get(tool_name)
         if not tool:
@@ -313,8 +322,12 @@ class ToolRegistry:
             return ToolExecutionResult(success=False, result=None, error=validation_error, execution_time=0.0)
         try:
             import time
+            import inspect
             start_time = time.time()
-            result = tool.execution_function(parameters)
+            if inspect.iscoroutinefunction(tool.execution_function):
+                result = await tool.execution_function(parameters)
+            else:
+                result = tool.execution_function(parameters)
             execution_time = time.time() - start_time
             return ToolExecutionResult(success=True, result=result, error=None, execution_time=execution_time)
         except Exception as e:
@@ -412,27 +425,59 @@ class ToolRegistry:
             parameters
         )
         
-    def _execute_schedule_task(self, parameters: Dict[str, Any]) -> Any:
+    async def _execute_schedule_task(self, parameters: Dict[str, Any]) -> Any:
         """Execute schedule task tool."""
-        # This would integrate with AWS EventBridge
-        # For now, return a placeholder
-        return {
-            "task_id": f"task_{parameters['task_name']}",
-            "status": "scheduled",
-            "schedule": parameters["schedule_expression"],
-            "description": parameters["task_description"]
-        }
+        if not self.eventbridge_scheduler:
+            return {"success": False, "error": "EventBridge scheduler not available. Please check AWS configuration.", "task_name": parameters.get("task_name", "unknown")}
+        try:
+            task_name = parameters["task_name"]
+            schedule_expression = parameters["schedule_expression"]
+            task_description = parameters.get("task_description", "")
+            target_function = parameters.get("target_function", "default_task_handler")
+            payload = parameters.get("payload", {})
+            enabled = parameters.get("enabled", True)
+            schedule_type = ScheduleType.RATE
+            if schedule_expression.startswith("cron("):
+                schedule_type = ScheduleType.CRON
+            elif schedule_expression.startswith("at("):
+                schedule_type = ScheduleType.ONE_TIME
+            scheduled_task = ScheduledTask(
+                name=task_name,
+                description=task_description,
+                schedule_expression=schedule_expression,
+                schedule_type=schedule_type,
+                target_function=target_function,
+                payload=payload,
+                enabled=enabled,
+                tags={"CreatedBy": "AutonomousAgent", "Component": "TaskScheduler"}
+            )
+            self.eventbridge_scheduler.register_task(scheduled_task)
+            success = await self.eventbridge_scheduler.create_schedule(task_name)
+            if success:
+                return {
+                    "success": True,
+                    "task_id": task_name,
+                    "status": "scheduled",
+                    "schedule": schedule_expression,
+                    "description": task_description,
+                    "enabled": enabled,
+                    "target_function": target_function,
+                    "message": f"Successfully scheduled task '{task_name}'"
+                }
+            else:
+                return {"success": False, "error": f"Failed to create schedule for task '{task_name}'", "task_name": task_name}
+        except KeyError as e:
+            return {"success": False, "error": f"Missing required parameter: {str(e)}", "task_name": parameters.get("task_name", "unknown")}
+        except Exception as e:
+            self.logger.error(f"Error scheduling task: {str(e)}")
+            return {"success": False, "error": f"Unexpected error: {str(e)}", "task_name": parameters.get("task_name", "unknown")}
         
     def _execute_format_phone_number(self, parameters: Dict[str, Any]) -> Any:
         """Execute format phone number tool."""
         import re
-        
         phone = parameters["phone_number"]
         country_code = parameters.get("country_code", "US")
-        
-        # Simple phone number formatting
         digits = re.sub(r'\D', '', phone)
-        
         if country_code == "US" and len(digits) == 10:
             formatted = f"+1{digits}"
         elif digits.startswith("1") and len(digits) == 11:
@@ -441,7 +486,6 @@ class ToolRegistry:
             formatted = f"+{digits}"
         else:
             formatted = digits
-            
         return {
             "original": phone,
             "formatted": formatted,

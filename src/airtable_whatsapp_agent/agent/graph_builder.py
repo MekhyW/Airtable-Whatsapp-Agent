@@ -24,7 +24,9 @@ class GraphBuilder:
         state_manager: StateManager,
         tool_registry: ToolRegistry,
         openai_api_key: str,
-        model_name: str = "gpt-4-turbo-preview"
+        model_name: str = "gpt-4-turbo-preview",
+        temperature: float = 0.5,
+        max_tokens: int = 2000,
     ):
         """Initialize graph builder."""
         self.logger = logging.getLogger(__name__)
@@ -33,8 +35,8 @@ class GraphBuilder:
         self.llm = ChatOpenAI(
             api_key=openai_api_key,
             model=model_name,
-            temperature=0.5,
-            max_tokens=2000
+            temperature=temperature,
+            max_tokens=max_tokens
         )
         self.graph = self._build_graph()
         

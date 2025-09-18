@@ -36,12 +36,6 @@ class Settings(BaseSettings):
     # Airtable Configuration
     airtable_api_key: str = Field(..., env="AIRTABLE_API_KEY")
     airtable_base_id: str = Field(..., env="AIRTABLE_BASE_ID")
-    airtable_admin_whitelist_table: str = Field(default="AdminWhitelist", env="AIRTABLE_ADMIN_WHITELIST_TABLE")
-    airtable_contacts_table: str = Field(default="Contacts", env="AIRTABLE_CONTACTS_TABLE")
-    airtable_conversations_table: str = Field(default="Conversations", env="AIRTABLE_CONVERSATIONS_TABLE")
-    airtable_messages_table: str = Field(default="Messages", env="AIRTABLE_MESSAGES_TABLE")
-    airtable_tasks_table: str = Field(default="Tasks", env="AIRTABLE_TASKS_TABLE")
-    airtable_audit_log_table: str = Field(default="AuditLog", env="AIRTABLE_AUDIT_LOG_TABLE")
     
     # AWS Configuration
     aws_region: str = Field(default="us-east-1", env="AWS_REGION")
