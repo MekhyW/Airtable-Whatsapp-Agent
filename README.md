@@ -201,30 +201,6 @@ docker-compose logs -f
 AIRTABLE_WHATSAPP_DEBUG=true python -m uvicorn src.airtable_whatsapp_agent.api.main:app --reload
 ```
 
-## 🔐 Security
-
-### Authentication
-
-The application supports multiple authentication methods:
-- JWT tokens
-- API keys
-- OAuth 2.0 (planned)
-
-### Security Features
-
-- Rate limiting per API endpoint
-- Request validation and sanitization
-- CORS protection
-- Security headers
-- Input validation
-
-## 📚 API Documentation
-
-Once the application is running, visit:
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
-- **OpenAPI JSON**: `http://localhost:8000/openapi.json`
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
