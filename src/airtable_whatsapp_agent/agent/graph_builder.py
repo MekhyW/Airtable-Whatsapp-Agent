@@ -11,7 +11,6 @@ from langchain.schema import HumanMessage, SystemMessage
 from .state_manager import StateManager, AgentGraphState
 from .tool_registry import ToolRegistry
 from ..models.agent import AgentState, AgentDecision, AgentAction
-from ..auth.authenticator import Authenticator
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,6 @@ class GraphBuilder:
         self,
         state_manager: StateManager,
         tool_registry: ToolRegistry,
-        authenticator: Authenticator,
         openai_api_key: str,
         model_name: str = "gpt-4-turbo-preview"
     ):
@@ -32,7 +30,6 @@ class GraphBuilder:
         self.logger = logging.getLogger(__name__)
         self.state_manager = state_manager
         self.tool_registry = tool_registry
-        self.authenticator = authenticator
         self.llm = ChatOpenAI(
             api_key=openai_api_key,
             model=model_name,
@@ -44,22 +41,12 @@ class GraphBuilder:
     def _build_graph(self) -> StateGraph:
         """Build the LangGraph workflow."""
         workflow = StateGraph(AgentGraphState)
-        workflow.add_node("authenticate", self._authenticate_node)
         workflow.add_node("analyze_input", self._analyze_input_node)
         workflow.add_node("make_decision", self._make_decision_node)
         workflow.add_node("execute_action", self._execute_action_node)
         workflow.add_node("handle_error", self._handle_error_node)
         workflow.add_node("generate_response", self._generate_response_node)
-        workflow.set_entry_point("authenticate")
-        workflow.add_conditional_edges(
-            "authenticate",
-            self._should_continue_after_auth,
-            {
-                "analyze": "analyze_input",
-                "error": "handle_error",
-                "end": END
-            }
-        )
+        workflow.set_entry_point("analyze_input")
         workflow.add_conditional_edges(
             "analyze_input",
             self._should_continue_after_analysis,
@@ -100,25 +87,7 @@ class GraphBuilder:
         workflow.add_edge("generate_response", END)
         return workflow.compile()
         
-    async def _authenticate_node(self, state: AgentGraphState) -> AgentGraphState:
-        """Authentication node."""
-        self.logger.info(f"Authenticating user: {state['user_phone']}")
-        try:
-            is_authenticated = await self.authenticator.authenticate_user(state["user_phone"])
-            if is_authenticated:
-                permissions = await self.authenticator.get_user_permissions(state["user_phone"])
-                state["available_tools"] = [tool.name for tool in self.tool_registry.get_available_tools(permissions)]
-                state["metadata"]["permissions"] = permissions
-                state["current_state"] = AgentState.PROCESSING
-                self.logger.info(f"User authenticated with {len(permissions)} permissions")
-            else:
-                state["current_state"] = AgentState.ERROR
-                state["last_error"] = "Authentication failed"
-        except Exception as e:
-            self.logger.error(f"Authentication error: {str(e)}")
-            state["current_state"] = AgentState.ERROR
-            state["last_error"] = str(e)
-        return state
+
         
     async def _analyze_input_node(self, state: AgentGraphState) -> AgentGraphState:
         """Analyze user input node."""
@@ -127,6 +96,7 @@ class GraphBuilder:
             if not state["current_message"]:
                 state["last_error"] = "No message to analyze"
                 return state
+            state["available_tools"] = [tool.name for tool in self.tool_registry.get_all_tools()]
             analysis_prompt = self._create_analysis_prompt(state)
             response = await self.llm.ainvoke(analysis_prompt)
             analysis = self._parse_analysis_response(response.content)
@@ -144,7 +114,7 @@ class GraphBuilder:
         self.logger.info("Making decision")
         try:
             decision_prompt = self._create_decision_prompt(state)
-            available_tools = self.tool_registry.get_all_tool_schemas(state["metadata"].get("permissions", []))
+            available_tools = self.tool_registry.get_all_tool_schemas()
             if available_tools:
                 response = await self.llm.ainvoke(decision_prompt, functions=available_tools)
             else:
@@ -219,20 +189,10 @@ class GraphBuilder:
             self.state_manager.add_message_to_history(state["session_id"], response_text, "assistant", "text")
             state["metadata"]["final_response"] = response_text
             state["current_state"] = AgentState.IDLE
-            
         except Exception as e:
             self.logger.error(f"Response generation error: {str(e)}")
             state["metadata"]["final_response"] = ("I apologize, but I'm having trouble generating a response. " "Please try again.")
         return state
-
-    def _should_continue_after_auth(self, state: AgentGraphState) -> str:
-        """Determine next step after authentication."""
-        if state["current_state"] == AgentState.ERROR:
-            return "error"
-        elif state["current_message"]:
-            return "analyze"
-        else:
-            return "end"
             
     def _should_continue_after_analysis(self, state: AgentGraphState) -> str:
         """Determine next step after input analysis."""

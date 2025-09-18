@@ -5,6 +5,7 @@ Main FastAPI application setup.
 import logging
 from contextlib import asynccontextmanager
 from typing import Dict, Any
+from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,7 +14,6 @@ from .webhooks import router as webhooks_router
 from .admin import router as admin_router
 from .middleware import setup_middleware
 from ..agent import AutonomousAgent
-from ..auth import Authenticator
 from ..mcp import MCPServerManager
 from ..config import Settings
 
@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 app_state = {
     "agent": None,
-    "authenticator": None,
     "mcp_manager": None,
     "settings": None
 }
@@ -39,11 +38,8 @@ async def lifespan(app: FastAPI):
         mcp_manager = MCPServerManager()
         await mcp_manager.initialize()
         app_state["mcp_manager"] = mcp_manager
-        authenticator = Authenticator(airtable_api_key=settings.airtable.api_key, airtable_base_id=settings.airtable.base_id)
-        app_state["authenticator"] = authenticator
         agent = AutonomousAgent(
             mcp_manager=mcp_manager,
-            authenticator=authenticator,
             openai_api_key=settings.openai_api_key,
             max_concurrent_sessions=settings.max_concurrent_sessions,
             session_timeout_minutes=settings.session_timeout_minutes
@@ -104,8 +100,7 @@ def create_app() -> FastAPI:
                 "timestamp": datetime.now().isoformat(),
                 "services": {
                     "mcp_manager": "healthy" if mcp_health else "unhealthy",
-                    "agent": "healthy" if app_state["agent"] else "unhealthy",
-                    "authenticator": "healthy" if app_state["authenticator"] else "unhealthy"
+                    "agent": "healthy" if app_state["agent"] else "unhealthy"
                 },
                 "metrics": agent_metrics
             }

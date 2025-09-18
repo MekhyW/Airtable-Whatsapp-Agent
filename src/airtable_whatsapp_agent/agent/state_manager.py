@@ -5,13 +5,7 @@ State management for the autonomous agent using LangGraph.
 import logging
 from typing import Any, Dict, List, Optional, TypedDict
 from datetime import datetime
-from ..models.agent import (
-    AgentState,
-    AgentAction,
-    AgentDecision,
-    ConversationContext,
-    TaskStatus
-)
+from ..models.agent import AgentState, AgentAction, AgentDecision, ConversationContext, TaskStatus
 
 
 logger = logging.getLogger(__name__)
@@ -276,12 +270,6 @@ class StateManager:
         valid_transitions = {
             AgentState.IDLE: [
                 AgentState.PROCESSING,
-                AgentState.AUTHENTICATING,
-                AgentState.ERROR
-            ],
-            AgentState.AUTHENTICATING: [
-                AgentState.PROCESSING,
-                AgentState.IDLE,
                 AgentState.ERROR
             ],
             AgentState.PROCESSING: [

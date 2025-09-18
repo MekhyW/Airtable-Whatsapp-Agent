@@ -23,11 +23,6 @@ python-dotenv>=1.0.0
 psutil>=5.9.0
 prometheus-client>=0.19.0
 
-# Security
-passlib[bcrypt]>=1.7.4
-python-jose[cryptography]>=3.3.0
-cryptography>=41.0.0
-
 # API integrations
 airtable-python-wrapper>=0.15.3
 requests>=2.31.0

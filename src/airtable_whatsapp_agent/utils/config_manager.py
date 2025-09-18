@@ -86,12 +86,6 @@ class AirtableConfig:
 @dataclass
 class SecurityConfig:
     """Security configuration."""
-    secret_key: str = ""
-    jwt_algorithm: str = "HS256"
-    jwt_expiration_hours: int = 24
-    password_min_length: int = 8
-    max_login_attempts: int = 5
-    lockout_duration_minutes: int = 15
     cors_origins: List[str] = field(default_factory=lambda: ["*"])
     allowed_hosts: List[str] = field(default_factory=lambda: ["*"])
 
@@ -226,14 +220,6 @@ class ConfigManager:
             airtable_config["table_name"] = env_val
         if airtable_config:
             config["airtable"] = airtable_config
-        # Security
-        security_config = {}
-        if env_val := os.getenv(f"{self._env_prefix}SECRET_KEY"):
-            security_config["secret_key"] = env_val
-        if env_val := os.getenv(f"{self._env_prefix}JWT_ALGORITHM"):
-            security_config["jwt_algorithm"] = env_val
-        if security_config:
-            config["security"] = security_config
         # Server
         server_config = {}
         if env_val := os.getenv(f"{self._env_prefix}SERVER_HOST"):
@@ -301,8 +287,6 @@ class ConfigManager:
                 errors.append("WhatsApp access token is required in production")
             if not config.airtable.api_key:
                 errors.append("Airtable API key is required in production")
-            if not config.security.secret_key:
-                errors.append("Secret key is required in production")
             if config.debug:
                 errors.append("Debug mode should be disabled in production")
         if not (1 <= config.server.port <= 65535):
@@ -393,12 +377,6 @@ class ConfigManager:
             "rate_limit_window": config.airtable.rate_limit_window
         }
         result["security"] = {
-            "secret_key": config.security.secret_key,
-            "jwt_algorithm": config.security.jwt_algorithm,
-            "jwt_expiration_hours": config.security.jwt_expiration_hours,
-            "password_min_length": config.security.password_min_length,
-            "max_login_attempts": config.security.max_login_attempts,
-            "lockout_duration_minutes": config.security.lockout_duration_minutes,
             "cors_origins": config.security.cors_origins,
             "allowed_hosts": config.security.allowed_hosts
         }

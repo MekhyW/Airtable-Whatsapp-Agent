@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", env="ENVIRONMENT")
     debug: bool = Field(default=False, env="DEBUG")
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
-    secret_key: str = Field(..., env="SECRET_KEY")
     api_v1_str: str = Field(default="/api/v1", env="API_V1_STR")
     
     # Database Configuration
@@ -52,10 +51,7 @@ class Settings(BaseSettings):
     aws_ecs_cluster_name: str = Field(default="airtable-whatsapp-agent-cluster", env="AWS_ECS_CLUSTER_NAME")
     aws_ecr_repository_uri: Optional[str] = Field(default=None, env="AWS_ECR_REPOSITORY_URI")
     
-    # Security Configuration
-    jwt_secret_key: str = Field(..., env="JWT_SECRET_KEY")
-    jwt_algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
-    jwt_access_token_expire_minutes: int = Field(default=30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    # Security
     rate_limit_per_minute: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
     cors_origins: List[str] = Field(default=["http://localhost:3000"], env="CORS_ORIGINS")
     

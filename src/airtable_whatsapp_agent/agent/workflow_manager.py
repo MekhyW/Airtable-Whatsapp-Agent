@@ -13,7 +13,7 @@ from .state_manager import StateManager, AgentGraphState
 from .graph_builder import GraphBuilder
 from .tool_registry import ToolRegistry
 from ..models.agent import AgentState, WorkflowStatus
-from ..auth.authenticator import Authenticator
+
 from ..mcp.manager import MCPServerManager
 
 
@@ -23,17 +23,16 @@ logger = logging.getLogger(__name__)
 class WorkflowManager:
     """Manages agent workflows and concurrent session execution."""
     
-    def __init__(self, mcp_manager: MCPServerManager, authenticator: Authenticator, openai_api_key: str, max_concurrent_sessions: int = 10, session_timeout_minutes: int = 30):
+    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, max_concurrent_sessions: int = 10, session_timeout_minutes: int = 30):
         """Initialize workflow manager."""
         self.logger = logging.getLogger(__name__)
         self.mcp_manager = mcp_manager
-        self.authenticator = authenticator
         self.openai_api_key = openai_api_key
         self.max_concurrent_sessions = max_concurrent_sessions
         self.session_timeout = timedelta(minutes=session_timeout_minutes)
         self.state_manager = StateManager()
         self.tool_registry = ToolRegistry(mcp_manager)
-        self.graph_builder = GraphBuilder(self.state_manager, self.tool_registry, self.authenticator, openai_api_key)
+        self.graph_builder = GraphBuilder(self.state_manager, self.tool_registry, openai_api_key)
         self.active_workflows: Dict[str, Dict[str, Any]] = {}
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent_sessions)
         self.metrics = {
@@ -249,10 +248,10 @@ class WorkflowManager:
 class AutonomousAgent:
     """Main autonomous agent class that coordinates all components."""
     
-    def __init__(self, mcp_manager: MCPServerManager, authenticator: Authenticator, openai_api_key: str, **kwargs):
+    def __init__(self, mcp_manager: MCPServerManager, openai_api_key: str, **kwargs):
         """Initialize autonomous agent."""
         self.logger = logging.getLogger(__name__)
-        self.workflow_manager = WorkflowManager(mcp_manager=mcp_manager, authenticator=authenticator, openai_api_key=openai_api_key, **kwargs)
+        self.workflow_manager = WorkflowManager(mcp_manager=mcp_manager, openai_api_key=openai_api_key, **kwargs)
         
     async def process_message(self, user_phone: str, message: str, message_type: str = "text", session_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> str:
         """Process incoming message from user."""

@@ -28,12 +28,7 @@ from .agent import (
     AgentTask,
     AgentDecision,
 )
-from .auth import (
-    User,
-    AdminUser,
-    AuthToken,
-    Permission,
-)
+
 
 __all__ = [
     # Airtable models
@@ -59,9 +54,4 @@ __all__ = [
     "AgentMemory",
     "AgentTask",
     "AgentDecision",
-    # Auth models
-    "User",
-    "AdminUser",
-    "AuthToken",
-    "Permission",
 ]

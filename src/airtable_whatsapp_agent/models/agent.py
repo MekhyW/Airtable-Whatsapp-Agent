@@ -14,7 +14,6 @@ class AgentActionType(str, Enum):
     WRITE_AIRTABLE = "write_airtable"
     SEND_WHATSAPP = "send_whatsapp"
     SCHEDULE_TASK = "schedule_task"
-    AUTHENTICATE_USER = "authenticate_user"
     ANALYZE_MESSAGE = "analyze_message"
     MAKE_DECISION = "make_decision"
     DELEGATE_TASK = "delegate_task"
