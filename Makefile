@@ -7,14 +7,6 @@ help:
 	@echo "  install         - Install production dependencies"
 	@echo "  install-dev     - Install development dependencies"
 	@echo "  run-dev         - Run development server"
-	@echo "  test            - Run all tests"
-	@echo "  test-unit       - Run unit tests"
-	@echo "  test-integration - Run integration tests"
-	@echo "  test-e2e        - Run end-to-end tests"
-	@echo "  lint            - Run all linting"
-	@echo "  format          - Format code"
-	@echo "  type-check      - Run type checking"
-	@echo "  security-check  - Run security checks"
 	@echo "  clean           - Clean build artifacts"
 	@echo "  docker-build    - Build Docker image"
 	@echo "  docker-run      - Run Docker container"
@@ -39,35 +31,6 @@ install-dev:
 # Run development server
 run-dev:
 	python -m airtable_whatsapp_agent.cli run --reload --log-level debug
-
-# Testing
-test:
-	pytest tests/ -v --cov=src/airtable_whatsapp_agent --cov-report=html --cov-report=term
-
-test-unit:
-	pytest tests/unit/ -v
-
-test-integration:
-	pytest tests/integration/ -v
-
-test-e2e:
-	pytest tests/e2e/ -v
-
-# Code quality
-lint: format type-check security-check
-	flake8 src/ tests/
-	@echo "✅ All linting checks passed!"
-
-format:
-	black src/ tests/
-	isort src/ tests/
-
-type-check:
-	mypy src/
-
-security-check:
-	bandit -r src/
-	safety check
 
 # Cleanup
 clean:

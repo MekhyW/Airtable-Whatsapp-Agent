@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Felipe Mekhy", email = "felipe@example.com"},
+    {name = "Felipe Catapano Emrich Melo", email = "f.melo@lsb.com.br"},
 ]
 keywords = ["ai", "agent", "airtable", "whatsapp", "automation", "mcp", "langgraph"]
 classifiers = [

@@ -3,9 +3,8 @@ Pydantic models for WhatsApp Business API data structures.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from enum import Enum
-
 from pydantic import BaseModel, Field, validator
 
 
@@ -44,10 +43,8 @@ class InteractiveType(str, Enum):
 
 class WhatsAppContact(BaseModel):
     """WhatsApp contact information."""
-    
     wa_id: str = Field(..., description="WhatsApp ID (phone number)")
     profile: Optional[Dict[str, Any]] = Field(None, description="Contact profile information")
-    
     @validator('wa_id')
     def validate_wa_id(cls, v):
         """Validate WhatsApp ID format."""
@@ -59,7 +56,6 @@ class WhatsAppContact(BaseModel):
 
 class WhatsAppMedia(BaseModel):
     """WhatsApp media information."""
-    
     id: Optional[str] = Field(None, description="Media ID")
     mime_type: Optional[str] = Field(None, description="Media MIME type")
     sha256: Optional[str] = Field(None, description="Media SHA256 hash")
@@ -70,7 +66,6 @@ class WhatsAppMedia(BaseModel):
 
 class WhatsAppLocation(BaseModel):
     """WhatsApp location information."""
-    
     latitude: float = Field(..., description="Location latitude")
     longitude: float = Field(..., description="Location longitude")
     name: Optional[str] = Field(None, description="Location name")
@@ -79,21 +74,18 @@ class WhatsAppLocation(BaseModel):
 
 class WhatsAppButton(BaseModel):
     """WhatsApp interactive button."""
-    
     type: str = Field(..., description="Button type")
     reply: Dict[str, str] = Field(..., description="Button reply configuration")
 
 
 class WhatsAppListSection(BaseModel):
     """WhatsApp list section."""
-    
     title: Optional[str] = Field(None, description="Section title")
     rows: List[Dict[str, str]] = Field(..., description="Section rows")
 
 
 class WhatsAppInteractive(BaseModel):
     """WhatsApp interactive message content."""
-    
     type: InteractiveType = Field(..., description="Interactive type")
     header: Optional[Dict[str, Any]] = Field(None, description="Interactive header")
     body: Optional[Dict[str, str]] = Field(None, description="Interactive body")
@@ -103,14 +95,12 @@ class WhatsAppInteractive(BaseModel):
 
 class WhatsAppMessage(BaseModel):
     """Base WhatsApp message model."""
-    
     id: str = Field(..., description="Message ID")
     from_: str = Field(..., alias="from", description="Sender phone number")
     to: Optional[str] = Field(None, description="Recipient phone number")
     timestamp: datetime = Field(..., description="Message timestamp")
     type: MessageType = Field(..., description="Message type")
     context: Optional[Dict[str, Any]] = Field(None, description="Message context")
-    
     class Config:
         """Pydantic configuration."""
         allow_population_by_field_name = True
@@ -119,14 +109,12 @@ class WhatsAppMessage(BaseModel):
 
 class WhatsAppTextMessage(WhatsAppMessage):
     """WhatsApp text message."""
-    
     text: Dict[str, str] = Field(..., description="Text content")
     type: MessageType = Field(default=MessageType.TEXT, description="Message type")
 
 
 class WhatsAppMediaMessage(WhatsAppMessage):
     """WhatsApp media message."""
-    
     media: WhatsAppMedia = Field(..., description="Media information")
     caption: Optional[str] = Field(None, description="Media caption")
 
@@ -140,28 +128,24 @@ class WhatsAppLocationMessage(WhatsAppMessage):
 
 class WhatsAppInteractiveMessage(WhatsAppMessage):
     """WhatsApp interactive message."""
-    
     interactive: WhatsAppInteractive = Field(..., description="Interactive content")
     type: MessageType = Field(default=MessageType.INTERACTIVE, description="Message type")
 
 
 class WhatsAppContactMessage(WhatsAppMessage):
     """WhatsApp contact message."""
-    
     contacts: List[Dict[str, Any]] = Field(..., description="Contact information")
     type: MessageType = Field(default=MessageType.CONTACTS, description="Message type")
 
 
 class WhatsAppMessageStatus(BaseModel):
     """WhatsApp message status update."""
-    
     id: str = Field(..., description="Message ID")
     status: MessageStatus = Field(..., description="Message status")
     timestamp: datetime = Field(..., description="Status timestamp")
     recipient_id: str = Field(..., description="Recipient phone number")
     conversation: Optional[Dict[str, Any]] = Field(None, description="Conversation information")
     pricing: Optional[Dict[str, Any]] = Field(None, description="Pricing information")
-    
     class Config:
         """Pydantic configuration."""
         json_encoders = { datetime: lambda v: v.isoformat() if v else None }
@@ -169,7 +153,6 @@ class WhatsAppMessageStatus(BaseModel):
 
 class WhatsAppError(BaseModel):
     """WhatsApp API error."""
-    
     code: int = Field(..., description="Error code")
     title: str = Field(..., description="Error title")
     message: str = Field(..., description="Error message")
@@ -178,21 +161,18 @@ class WhatsAppError(BaseModel):
 
 class WhatsAppWebhookEntry(BaseModel):
     """WhatsApp webhook entry."""
-    
     id: str = Field(..., description="Entry ID")
     changes: List[Dict[str, Any]] = Field(..., description="Changes in the entry")
 
 
 class WhatsAppWebhook(BaseModel):
     """WhatsApp webhook payload."""
-    
     object: str = Field(..., description="Webhook object type")
     entry: List[WhatsAppWebhookEntry] = Field(..., description="Webhook entries")
 
 
 class WhatsAppMessageRequest(BaseModel):
     """Request model for sending WhatsApp messages."""
-    
     messaging_product: str = Field(default="whatsapp", description="Messaging product")
     recipient_type: str = Field(default="individual", description="Recipient type")
     to: str = Field(..., description="Recipient phone number")
@@ -203,7 +183,6 @@ class WhatsAppMessageRequest(BaseModel):
     interactive: Optional[WhatsAppInteractive] = Field(None, description="Interactive content")
     template: Optional[Dict[str, Any]] = Field(None, description="Template content")
     context: Optional[Dict[str, Any]] = Field(None, description="Message context")
-    
     @validator('to')
     def validate_recipient(cls, v):
         """Validate recipient phone number."""
@@ -215,7 +194,6 @@ class WhatsAppMessageRequest(BaseModel):
 
 class WhatsAppMessageResponse(BaseModel):
     """Response model for WhatsApp message sending."""
-    
     messaging_product: str = Field(..., description="Messaging product")
     contacts: List[WhatsAppContact] = Field(..., description="Contact information")
     messages: List[Dict[str, str]] = Field(..., description="Message information")
@@ -223,7 +201,6 @@ class WhatsAppMessageResponse(BaseModel):
 
 class WhatsAppTemplate(BaseModel):
     """WhatsApp message template."""
-    
     name: str = Field(..., description="Template name")
     language: Dict[str, str] = Field(..., description="Template language")
     components: Optional[List[Dict[str, Any]]] = Field(None, description="Template components")
@@ -231,7 +208,6 @@ class WhatsAppTemplate(BaseModel):
 
 class WhatsAppBusinessProfile(BaseModel):
     """WhatsApp Business profile information."""
-    
     about: Optional[str] = Field(None, description="Business description")
     address: Optional[str] = Field(None, description="Business address")
     description: Optional[str] = Field(None, description="Business description")
@@ -243,7 +219,6 @@ class WhatsAppBusinessProfile(BaseModel):
 
 class WhatsAppPhoneNumber(BaseModel):
     """WhatsApp phone number information."""
-    
     verified_name: str = Field(..., description="Verified business name")
     display_phone_number: str = Field(..., description="Display phone number")
     id: str = Field(..., description="Phone number ID")

@@ -3,62 +3,47 @@ Configuration management for the Airtable WhatsApp Agent.
 """
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 from pydantic_settings import BaseSettings
-
-
-class MCPConfig(BaseModel):
-    """MCP server configuration."""
-    airtable_server_url: str = Field(default="http://airtable-mcp:8000", env="MCP_AIRTABLE_SERVER_URL")
-    whatsapp_server_url: str = Field(default="http://whatsapp-mcp:8001", env="MCP_WHATSAPP_SERVER_URL")
-    timeout: int = Field(default=30, env="MCP_TIMEOUT_SECONDS")
-    max_retries: int = Field(default=3, env="MCP_MAX_RETRIES")
-    retry_delay: float = Field(default=1.0, env="MCP_RETRY_DELAY")
-
-
-class AirtableConfig(BaseModel):
-    """Airtable configuration."""
-    api_key: str = Field(..., env="AIRTABLE_API_KEY")
-    base_id: str = Field(..., env="AIRTABLE_BASE_ID")
-    admin_whitelist_table: str = Field(default="AdminWhitelist", env="AIRTABLE_ADMIN_WHITELIST_TABLE")
-    contacts_table: str = Field(default="Contacts", env="AIRTABLE_CONTACTS_TABLE")
-    conversations_table: str = Field(default="Conversations", env="AIRTABLE_CONVERSATIONS_TABLE")
-    messages_table: str = Field(default="Messages", env="AIRTABLE_MESSAGES_TABLE")
-    tasks_table: str = Field(default="Tasks", env="AIRTABLE_TASKS_TABLE")
-    audit_log_table: str = Field(default="AuditLog", env="AIRTABLE_AUDIT_LOG_TABLE")
-
-
-class WhatsAppConfig(BaseModel):
-    """WhatsApp configuration."""
-    access_token: str = Field(..., env="WHATSAPP_ACCESS_TOKEN")
-    phone_number_id: str = Field(..., env="WHATSAPP_PHONE_NUMBER_ID")
-    business_account_id: str = Field(..., env="WHATSAPP_BUSINESS_ACCOUNT_ID")
-    webhook_verify_token: str = Field(..., env="WHATSAPP_WEBHOOK_VERIFY_TOKEN")
-    webhook_url: str = Field(..., env="WHATSAPP_WEBHOOK_URL")
-    api_version: str = Field(default="v18.0", env="WHATSAPP_API_VERSION")
-
 
 class Settings(BaseSettings):
     """Application settings."""
-
+    
     # Application Settings
     environment: str = Field(default="development", env="ENVIRONMENT")
     debug: bool = Field(default=False, env="DEBUG")
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     secret_key: str = Field(..., env="SECRET_KEY")
     api_v1_str: str = Field(default="/api/v1", env="API_V1_STR")
+    
     # Database Configuration
     database_url: str = Field(..., env="DATABASE_URL")
     redis_url: str = Field(..., env="REDIS_URL")
+    
     # OpenAI Configuration
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4-turbo-preview", env="OPENAI_MODEL")
     openai_max_tokens: int = Field(default=4096, env="OPENAI_MAX_TOKENS")
     openai_temperature: float = Field(default=0.1, env="OPENAI_TEMPERATURE")
-    # Configuration Models
-    whatsapp: WhatsAppConfig = Field(default_factory=WhatsAppConfig)
-    airtable: AirtableConfig = Field(default_factory=AirtableConfig)
-    mcp: MCPConfig = Field(default_factory=MCPConfig)
+    
+    # WhatsApp Business API Configuration
+    whatsapp_access_token: str = Field(..., env="WHATSAPP_ACCESS_TOKEN")
+    whatsapp_phone_number_id: str = Field(..., env="WHATSAPP_PHONE_NUMBER_ID")
+    whatsapp_business_account_id: str = Field(..., env="WHATSAPP_BUSINESS_ACCOUNT_ID")
+    whatsapp_webhook_verify_token: str = Field(..., env="WHATSAPP_WEBHOOK_VERIFY_TOKEN")
+    whatsapp_webhook_url: str = Field(..., env="WHATSAPP_WEBHOOK_URL")
+    whatsapp_api_version: str = Field(default="v18.0", env="WHATSAPP_API_VERSION")
+    
+    # Airtable Configuration
+    airtable_api_key: str = Field(..., env="AIRTABLE_API_KEY")
+    airtable_base_id: str = Field(..., env="AIRTABLE_BASE_ID")
+    airtable_admin_whitelist_table: str = Field(default="AdminWhitelist", env="AIRTABLE_ADMIN_WHITELIST_TABLE")
+    airtable_contacts_table: str = Field(default="Contacts", env="AIRTABLE_CONTACTS_TABLE")
+    airtable_conversations_table: str = Field(default="Conversations", env="AIRTABLE_CONVERSATIONS_TABLE")
+    airtable_messages_table: str = Field(default="Messages", env="AIRTABLE_MESSAGES_TABLE")
+    airtable_tasks_table: str = Field(default="Tasks", env="AIRTABLE_TASKS_TABLE")
+    airtable_audit_log_table: str = Field(default="AuditLog", env="AIRTABLE_AUDIT_LOG_TABLE")
+    
     # AWS Configuration
     aws_region: str = Field(default="us-east-1", env="AWS_REGION")
     aws_access_key_id: Optional[str] = Field(default=None, env="AWS_ACCESS_KEY_ID")
@@ -66,23 +51,35 @@ class Settings(BaseSettings):
     aws_eventbridge_bus_name: str = Field(default="airtable-whatsapp-agent-events", env="AWS_EVENTBRIDGE_BUS_NAME")
     aws_ecs_cluster_name: str = Field(default="airtable-whatsapp-agent-cluster", env="AWS_ECS_CLUSTER_NAME")
     aws_ecr_repository_uri: Optional[str] = Field(default=None, env="AWS_ECR_REPOSITORY_URI")
+    
     # Security Configuration
     jwt_secret_key: str = Field(..., env="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
     jwt_access_token_expire_minutes: int = Field(default=30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
     rate_limit_per_minute: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
     cors_origins: List[str] = Field(default=["http://localhost:3000"], env="CORS_ORIGINS")
+    
     # Agent Configuration
     agent_name: str = Field(default="AirtableWhatsAppAgent", env="AGENT_NAME")
-    agent_description: str = Field(default="Autonomous AI agent for Airtable and WhatsApp integration", env="AGENT_DESCRIPTION")
+    agent_description: str = Field(
+        default="Autonomous AI agent for Airtable and WhatsApp integration",
+        env="AGENT_DESCRIPTION"
+    )
     agent_max_iterations: int = Field(default=10, env="AGENT_MAX_ITERATIONS")
     agent_timeout_seconds: int = Field(default=300, env="AGENT_TIMEOUT_SECONDS")
     agent_memory_size: int = Field(default=1000, env="AGENT_MEMORY_SIZE")
+    
+    # MCP Server Configuration
+    mcp_airtable_server_url: str = Field(default="http://localhost:8001", env="MCP_AIRTABLE_SERVER_URL")
+    mcp_whatsapp_server_url: str = Field(default="http://localhost:8002", env="MCP_WHATSAPP_SERVER_URL")
+    mcp_timeout_seconds: int = Field(default=30, env="MCP_TIMEOUT_SECONDS")
+    
     # Monitoring and Observability
     sentry_dsn: Optional[str] = Field(default=None, env="SENTRY_DSN")
     prometheus_multiproc_dir: str = Field(default="/tmp/prometheus_multiproc_dir", env="PROMETHEUS_MULTIPROC_DIR")
     jaeger_agent_host: str = Field(default="localhost", env="JAEGER_AGENT_HOST")
     jaeger_agent_port: int = Field(default=6831, env="JAEGER_AGENT_PORT")
+    
     # Development Settings
     reload: bool = Field(default=False, env="RELOAD")
     workers: int = Field(default=1, env="WORKERS")

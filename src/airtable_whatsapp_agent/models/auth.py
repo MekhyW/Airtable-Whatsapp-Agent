@@ -51,7 +51,6 @@ class AuthTokenType(str, Enum):
 
 class Permission(BaseModel):
     """Permission model."""
-    
     resource: ResourceType = Field(..., description="Resource type")
     action: PermissionType = Field(..., description="Permission type")
     conditions: Optional[Dict[str, Any]] = Field(None, description="Permission conditions")
@@ -72,7 +71,6 @@ class Permission(BaseModel):
 
 class User(BaseModel):
     """Base user model."""
-    
     user_id: str = Field(..., description="Unique user identifier")
     phone_number: str = Field(..., description="User phone number")
     name: Optional[str] = Field(None, description="User name")
@@ -109,7 +107,6 @@ class User(BaseModel):
 
 class AdminUser(User):
     """Administrator user model with additional privileges."""
-    
     role: UserRole = Field(default=UserRole.ADMIN, description="Admin role")
     admin_level: int = Field(default=1, ge=1, le=10, description="Admin level (1-10)")
     can_manage_users: bool = Field(default=True, description="Can manage other users")
@@ -139,7 +136,6 @@ class AdminUser(User):
 
 class AuthToken(BaseModel):
     """Authentication token model."""
-    
     token_id: str = Field(..., description="Unique token identifier")
     token_type: AuthTokenType = Field(..., description="Token type")
     user_id: str = Field(..., description="Associated user ID")
@@ -173,7 +169,6 @@ class AuthToken(BaseModel):
 
 class AuthSession(BaseModel):
     """User authentication session."""
-    
     session_id: str = Field(..., description="Unique session identifier")
     user_id: str = Field(..., description="Associated user ID")
     conversation_id: Optional[str] = Field(None, description="Associated conversation ID")
@@ -210,7 +205,6 @@ class AuthSession(BaseModel):
 
 class AuthenticationRequest(BaseModel):
     """Authentication request model."""
-    
     phone_number: str = Field(..., description="User phone number")
     verification_code: Optional[str] = Field(None, description="Verification code")
     device_info: Optional[Dict[str, Any]] = Field(None, description="Device information")
@@ -228,7 +222,6 @@ class AuthenticationRequest(BaseModel):
 
 class AuthenticationResponse(BaseModel):
     """Authentication response model."""
-    
     success: bool = Field(..., description="Whether authentication was successful")
     user: Optional[User] = Field(None, description="Authenticated user")
     session: Optional[AuthSession] = Field(None, description="Created session")
@@ -241,7 +234,6 @@ class AuthenticationResponse(BaseModel):
 
 class PermissionCheck(BaseModel):
     """Permission check request."""
-    
     user_id: str = Field(..., description="User ID to check")
     resource: ResourceType = Field(..., description="Resource to access")
     action: PermissionType = Field(..., description="Action to perform")
@@ -250,7 +242,6 @@ class PermissionCheck(BaseModel):
 
 class PermissionCheckResult(BaseModel):
     """Permission check result."""
-    
     allowed: bool = Field(..., description="Whether action is allowed")
     reason: Optional[str] = Field(None, description="Reason for denial")
     conditions: Optional[Dict[str, Any]] = Field(None, description="Conditional permissions")
@@ -259,7 +250,6 @@ class PermissionCheckResult(BaseModel):
 
 class AuditEvent(BaseModel):
     """Audit event for security logging."""
-    
     event_id: str = Field(..., description="Unique event identifier")
     event_type: str = Field(..., description="Type of event")
     user_id: Optional[str] = Field(None, description="User who performed the action")
@@ -271,7 +261,6 @@ class AuditEvent(BaseModel):
     success: bool = Field(..., description="Whether action was successful")
     details: Dict[str, Any] = Field(default_factory=dict, description="Additional event details")
     risk_score: Optional[float] = Field(None, description="Risk score for the event")
-    
     class Config:
         """Pydantic configuration."""
         json_encoders = { datetime: lambda v: v.isoformat() if v else None }

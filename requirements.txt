@@ -37,15 +37,6 @@ python-dateutil>=2.8.2
 pytz>=2023.3
 click>=8.1.0
 
-# Development dependencies (optional)
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-black>=23.0.0
-isort>=5.12.0
-flake8>=6.0.0
-mypy>=1.7.0
-
 # Production dependencies
 gunicorn>=21.2.0
 sentry-sdk[fastapi]>=1.38.0

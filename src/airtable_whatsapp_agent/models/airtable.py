@@ -27,11 +27,9 @@ class TaskPriority(str, Enum):
 
 class AirtableRecord(BaseModel):
     """Base model for Airtable records."""
-    
     id: Optional[str] = Field(None, description="Airtable record ID")
     created_time: Optional[datetime] = Field(None, description="Record creation timestamp")
     fields: Dict[str, Any] = Field(default_factory=dict, description="Record fields")
-    
     class Config:
         """Pydantic configuration."""
         json_encoders = { datetime: lambda v: v.isoformat() if v else None }
@@ -39,7 +37,6 @@ class AirtableRecord(BaseModel):
 
 class AdminWhitelistRecord(AirtableRecord):
     """Model for administrator whitelist records."""
-    
     phone_number: str = Field(..., description="Administrator phone number")
     name: str = Field(..., description="Administrator name")
     email: Optional[str] = Field(None, description="Administrator email")
@@ -59,7 +56,6 @@ class AdminWhitelistRecord(AirtableRecord):
 
 class ContactRecord(AirtableRecord):
     """Model for contact records."""
-    
     phone_number: str = Field(..., description="Contact phone number")
     name: Optional[str] = Field(None, description="Contact name")
     email: Optional[str] = Field(None, description="Contact email")
@@ -81,7 +77,6 @@ class ContactRecord(AirtableRecord):
 
 class ConversationRecord(AirtableRecord):
     """Model for conversation records."""
-    
     conversation_id: str = Field(..., description="Unique conversation identifier")
     contact_phone: str = Field(..., description="Contact phone number")
     admin_phone: Optional[str] = Field(None, description="Admin phone number")
@@ -96,7 +91,6 @@ class ConversationRecord(AirtableRecord):
 
 class MessageRecord(AirtableRecord):
     """Model for message records."""
-    
     message_id: str = Field(..., description="Unique message identifier")
     conversation_id: str = Field(..., description="Associated conversation ID")
     sender_phone: str = Field(..., description="Sender phone number")
@@ -112,7 +106,6 @@ class MessageRecord(AirtableRecord):
 
 class TaskRecord(AirtableRecord):
     """Model for task records."""
-    
     task_id: str = Field(..., description="Unique task identifier")
     title: str = Field(..., description="Task title")
     description: Optional[str] = Field(None, description="Task description")
@@ -131,7 +124,6 @@ class TaskRecord(AirtableRecord):
 
 class AuditLogRecord(AirtableRecord):
     """Model for audit log records."""
-    
     log_id: str = Field(..., description="Unique log identifier")
     action: str = Field(..., description="Action performed")
     actor_phone: str = Field(..., description="Phone number of actor")
@@ -148,7 +140,6 @@ class AuditLogRecord(AirtableRecord):
 
 class ProjectRecord(AirtableRecord):
     """Model for project records."""
-    
     project_id: str = Field(..., description="Unique project identifier")
     name: str = Field(..., description="Project name")
     description: Optional[str] = Field(None, description="Project description")
@@ -164,7 +155,6 @@ class ProjectRecord(AirtableRecord):
 
 class ScheduledTaskRecord(AirtableRecord):
     """Model for scheduled task records."""
-    
     schedule_id: str = Field(..., description="Unique schedule identifier")
     task_name: str = Field(..., description="Scheduled task name")
     description: Optional[str] = Field(None, description="Task description")

@@ -115,30 +115,6 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## ☁️ AWS Cloud Deployment
 
-### Automated Deployment
-
-Use the provided scripts for automated AWS deployment:
-
-1. **Set up AWS infrastructure**
-   ```bash
-   chmod +x scripts/setup-aws-infrastructure.sh
-   ./scripts/setup-aws-infrastructure.sh
-   ```
-
-2. **Deploy to ECR**
-   ```bash
-   chmod +x scripts/deploy-ecr.sh
-   ./scripts/deploy-ecr.sh
-   ```
-
-3. **Deploy to ECS**
-   ```bash
-   chmod +x scripts/deploy-ecs.sh
-   ./scripts/deploy-ecs.sh
-   ```
-
-### Manual AWS Setup
-
 #### 1. Create ECR Repository
 
 ```bash

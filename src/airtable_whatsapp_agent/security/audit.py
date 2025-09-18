@@ -5,7 +5,7 @@ Audit logging system for tracking security events and user actions.
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from enum import Enum
 from pathlib import Path
 import asyncio
