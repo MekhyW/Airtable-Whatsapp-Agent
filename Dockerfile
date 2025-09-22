@@ -46,6 +46,7 @@ WORKDIR /app
 COPY src/ ./src/
 COPY pyproject.toml ./
 COPY README.md ./
+COPY LICENSE ./
 
 # Install the application in development mode
 RUN pip install -e .
