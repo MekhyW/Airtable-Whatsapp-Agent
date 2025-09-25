@@ -27,6 +27,7 @@ from .agent import (
     AgentMemory,
     AgentTask,
     AgentDecision,
+    ConversationContext,
 )
 
 
@@ -54,4 +55,5 @@ __all__ = [
     "AgentMemory",
     "AgentTask",
     "AgentDecision",
+    "ConversationContext",
 ]

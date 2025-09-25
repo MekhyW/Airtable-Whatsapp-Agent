@@ -172,6 +172,21 @@ class AgentState(BaseModel):
         json_encoders = { datetime: lambda v: v.isoformat() if v else None }
 
 
+class ConversationContext(BaseModel):
+    """Context for ongoing conversations."""
+    session_id: str = Field(..., description="Session identifier")
+    user_phone: str = Field(..., description="User phone number")
+    current_state: str = Field(..., description="Current conversation state")
+    conversation_history: List[Dict[str, Any]] = Field(default_factory=list, description="Recent conversation history")
+    current_task: Optional[str] = Field(None, description="Current task being processed")
+    task_context: Dict[str, Any] = Field(default_factory=dict, description="Task-specific context")
+    available_tools: List[str] = Field(default_factory=list, description="Available tools for this conversation")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    class Config:
+        """Pydantic configuration."""
+        json_encoders = { datetime: lambda v: v.isoformat() if v else None }
+
+
 class AgentCapability(BaseModel):
     """Agent capability definition."""
     name: str = Field(..., description="Capability name")

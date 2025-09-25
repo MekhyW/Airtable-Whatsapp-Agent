@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     mcp_airtable_server_url: str = Field(default="http://localhost:8001", env="MCP_AIRTABLE_SERVER_URL")
     mcp_whatsapp_server_url: str = Field(default="http://localhost:8002", env="MCP_WHATSAPP_SERVER_URL")
     mcp_timeout_seconds: int = Field(default=30, env="MCP_TIMEOUT_SECONDS")
+    mcp_max_retries: int = Field(default=3, env="MCP_MAX_RETRIES")
+    mcp_retry_delay: float = Field(default=1.0, env="MCP_RETRY_DELAY")
+    mcp_airtable_api_key: Optional[str] = Field(default=None, env="MCP_AIRTABLE_API_KEY")
+    mcp_whatsapp_access_token: Optional[str] = Field(default=None, env="MCP_WHATSAPP_ACCESS_TOKEN")
     
     # Monitoring and Observability
     prometheus_multiproc_dir: str = Field(default="/tmp/prometheus_multiproc_dir", env="PROMETHEUS_MULTIPROC_DIR")

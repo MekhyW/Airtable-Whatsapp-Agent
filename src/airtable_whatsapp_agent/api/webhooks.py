@@ -9,8 +9,8 @@ import json
 from fastapi import APIRouter, Request, HTTPException, Query, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
-from .main import get_app_state
-from ..models import WhatsAppMessage, WhatsAppWebhookEvent
+from .app_state import get_app_state
+from ..models import WhatsAppMessage, WhatsAppWebhook
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class WhatsAppWebhookHandler:
             except Exception as e:
                 logger.error(f"Error processing webhook event: {str(e)}", exc_info=True)
                 
-    async def _handle_event(self, event: WhatsAppWebhookEvent):
+    async def _handle_event(self, event: WhatsAppWebhook):
         """Handle a single webhook event."""
         try:
             app_state = get_app_state()
@@ -68,7 +68,7 @@ class WhatsAppWebhookHandler:
         except Exception as e:
             logger.error(f"Error handling webhook event: {str(e)}", exc_info=True)
             
-    def _extract_message(self, event: WhatsAppWebhookEvent) -> Optional[WhatsAppMessage]:
+    def _extract_message(self, event: WhatsAppWebhook) -> Optional[WhatsAppMessage]:
         """Extract WhatsApp message from webhook event."""
         try:
             if not event.entry:
@@ -108,7 +108,7 @@ class WhatsAppWebhookHandler:
             return media_data.get("id")  # This is the media ID, not URL 
         return None
         
-    async def queue_event(self, event: WhatsAppWebhookEvent):
+    async def queue_event(self, event: WhatsAppWebhook):
         """Queue webhook event for processing."""
         try:
             await self.processing_queue.put(event)
@@ -146,7 +146,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         body = await request.body()
         data = json.loads(body)
         logger.info(f"Received webhook event: {json.dumps(data, indent=2)}")
-        event = WhatsAppWebhookEvent(**data)
+        event = WhatsAppWebhook(**data)
         await webhook_handler.start_processing()
         background_tasks.add_task(webhook_handler.queue_event, event)
         return {"status": "success"}
@@ -177,7 +177,7 @@ async def webhook_status():
 async def test_webhook(test_data: Dict[str, Any]):
     """Test webhook processing with sample data."""
     try:
-        event = WhatsAppWebhookEvent(**test_data)
+        event = WhatsAppWebhook(**test_data)
         await webhook_handler.start_processing()
         await webhook_handler.queue_event(event)
         return { "status": "success", "message": "Test event queued for processing" }
