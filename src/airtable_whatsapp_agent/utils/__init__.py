@@ -17,7 +17,8 @@ from .error_handling import (
     circuit_breaker,
     AIRTABLE_RETRY_CONFIG,
     WHATSAPP_RETRY_CONFIG,
-    OPENAI_RETRY_CONFIG
+    OPENAI_RETRY_CONFIG,
+    EXTERNAL_MCP_RETRY_CONFIG
 )
 
 from .rate_limiter import (
@@ -32,7 +33,8 @@ from .rate_limiter import (
     AdaptiveRateLimiter,
     WHATSAPP_RATE_LIMIT,
     AIRTABLE_RATE_LIMIT,
-    OPENAI_RATE_LIMIT
+    OPENAI_RATE_LIMIT,
+    EXTERNAL_MCP_RATE_LIMIT
 )
 
 from .monitoring import (
@@ -68,6 +70,45 @@ from .config_manager import (
     load_config,
 )
 
+from .logging import (
+    LogLevel as LoggingLevel,
+    StructuredFormatter,
+    ColoredFormatter,
+    LoggerManager,
+    logger_manager,
+    get_logger,
+    configure_logging,
+    log_function_call,
+    log_function_result,
+    log_api_request,
+    log_api_response,
+)
+
+from .validation import (
+    ValidationError,
+    ValidationSeverity,
+    ValidationResult,
+    Validator,
+    StringValidator,
+    EmailValidator,
+    PhoneValidator,
+    URLValidator,
+    NumberValidator,
+    ListValidator,
+    DictValidator,
+    JSONValidator,
+    DateTimeValidator,
+    validate_email,
+    validate_phone,
+    validate_url,
+    validate_json,
+    sanitize_string,
+    sanitize_phone,
+    validate_whatsapp_number,
+    validate_airtable_record_id,
+    validate_airtable_base_id,
+)
+
 __all__ = [
     # Error handling
     "ErrorHandler",
@@ -82,6 +123,7 @@ __all__ = [
     "AIRTABLE_RETRY_CONFIG",
     "WHATSAPP_RETRY_CONFIG",
     "OPENAI_RETRY_CONFIG",
+    "EXTERNAL_MCP_RETRY_CONFIG",
     
     # Rate limiting
     "RateLimiter",
@@ -96,6 +138,7 @@ __all__ = [
     "WHATSAPP_RATE_LIMIT",
     "AIRTABLE_RATE_LIMIT",
     "OPENAI_RATE_LIMIT",
+    "EXTERNAL_MCP_RATE_LIMIT",
     
     # Monitoring
     "HealthChecker",
@@ -127,4 +170,41 @@ __all__ = [
     "config_manager",
     "get_config",
     "load_config",
+    
+    # Logging
+    "LoggingLevel",
+    "StructuredFormatter",
+    "ColoredFormatter",
+    "LoggerManager",
+    "logger_manager",
+    "get_logger",
+    "configure_logging",
+    "log_function_call",
+    "log_function_result",
+    "log_api_request",
+    "log_api_response",
+    
+    # Validation
+    "ValidationError",
+    "ValidationSeverity",
+    "ValidationResult",
+    "Validator",
+    "StringValidator",
+    "EmailValidator",
+    "PhoneValidator",
+    "URLValidator",
+    "NumberValidator",
+    "ListValidator",
+    "DictValidator",
+    "JSONValidator",
+    "DateTimeValidator",
+    "validate_email",
+    "validate_phone",
+    "validate_url",
+    "validate_json",
+    "sanitize_string",
+    "sanitize_phone",
+    "validate_whatsapp_number",
+    "validate_airtable_record_id",
+    "validate_airtable_base_id",
 ]

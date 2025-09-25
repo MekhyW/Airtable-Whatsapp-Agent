@@ -103,7 +103,7 @@ class WhatsAppMessage(BaseModel):
     context: Optional[Dict[str, Any]] = Field(None, description="Message context")
     class Config:
         """Pydantic configuration."""
-        allow_population_by_field_name = True
+        validate_by_name = True
         json_encoders = { datetime: lambda v: v.isoformat() if v else None }
 
 

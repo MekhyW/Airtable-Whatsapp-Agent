@@ -296,3 +296,11 @@ OPENAI_RETRY_CONFIG = RetryConfig(
     strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
     retryable_status_codes=[429, 500, 502, 503, 504]
 )
+
+EXTERNAL_MCP_RETRY_CONFIG = RetryConfig(
+    max_attempts=3,
+    base_delay=1.0,
+    max_delay=30.0,
+    strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
+    retryable_status_codes=[429, 500, 502, 503, 504]
+)

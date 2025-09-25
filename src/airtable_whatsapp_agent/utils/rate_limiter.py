@@ -306,6 +306,15 @@ OPENAI_RATE_LIMIT = RateLimitConfig(
     scope=RateLimitScope.GLOBAL
 )
 
+EXTERNAL_MCP_RATE_LIMIT = RateLimitConfig(
+    requests_per_second=5.0,
+    requests_per_minute=300,
+    requests_per_hour=18000,
+    burst_capacity=10,
+    strategy=RateLimitStrategy.TOKEN_BUCKET,
+    scope=RateLimitScope.GLOBAL
+)
+
 
 class RateLimitMiddleware:
     """Middleware for applying rate limiting to API calls."""

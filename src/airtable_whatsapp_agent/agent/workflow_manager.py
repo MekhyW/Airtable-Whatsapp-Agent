@@ -12,7 +12,7 @@ import uuid
 from .state_manager import StateManager, AgentGraphState
 from .graph_builder import GraphBuilder
 from .tool_registry import ToolRegistry
-from ..models.agent import AgentState, WorkflowStatus
+from ..models.agent import AgentState
 from ..mcp.manager import MCPServerManager
 from ..config import Settings
 
@@ -60,7 +60,7 @@ class WorkflowManager:
         self.active_workflows[session_id] = {
             "user_phone": user_phone,
             "start_time": datetime.utcnow(),
-            "status": WorkflowStatus.RUNNING,
+            "status": "running",
             "message_count": 0,
             "last_activity": datetime.utcnow()
         }
@@ -106,7 +106,7 @@ class WorkflowManager:
         if session_id not in self.active_workflows:
             return False
         self.logger.info(f"Stopping session {session_id}, reason: {reason}")
-        self.active_workflows[session_id]["status"] = WorkflowStatus.STOPPED
+        self.active_workflows[session_id]["status"] = "stopped"
         self.active_workflows[session_id]["stop_reason"] = reason
         self.state_manager.cleanup_session(session_id)
         del self.active_workflows[session_id]
@@ -161,12 +161,12 @@ class WorkflowManager:
             if session_id in self.active_workflows:
                 workflow = self.active_workflows[session_id]
                 if result["current_state"] == AgentState.WAITING_FOR_INPUT:
-                    workflow["status"] = WorkflowStatus.WAITING
+                    workflow["status"] = "waiting"
                 elif result["current_state"] == AgentState.ERROR:
-                    workflow["status"] = WorkflowStatus.FAILED
+                    workflow["status"] = "failed"
                     self.metrics["failed_sessions"] += 1
                 else:
-                    workflow["status"] = WorkflowStatus.COMPLETED
+                    workflow["status"] = "completed"
                     self.metrics["successful_sessions"] += 1
                 duration = (datetime.utcnow() - workflow["start_time"]).total_seconds()
                 self._update_average_duration(duration)
@@ -180,7 +180,7 @@ class WorkflowManager:
         self.logger.error(f"Workflow error for session {session_id}: {error}")
         self.metrics["error_count"] += 1
         if session_id in self.active_workflows:
-            self.active_workflows[session_id]["status"] = WorkflowStatus.FAILED
+            self.active_workflows[session_id]["status"] = "failed"
             self.active_workflows[session_id]["error"] = error
             self.metrics["failed_sessions"] += 1
         try:
