@@ -269,13 +269,13 @@ ALB_DNS=$(aws elbv2 describe-load-balancers \
 
 # Update webhook URL secret
 aws secretsmanager update-secret \
-    --secret-id "airtable-whatsapp-agent/whatsapp-webhook-url" \
+    --secret-id "airtable-whatsapp-agent:WHATSAPP_WEBHOOK_URL::" \
     --secret-string "https://${ALB_DNS}/api/v1/webhooks/whatsapp" \
     --region us-east-2
 
 # Update CORS origins
 aws secretsmanager update-secret \
-    --secret-id "airtable-whatsapp-agent/cors-origins" \
+    --secret-id "airtable-whatsapp-agent:CORS_ORIGINS::" \
     --secret-string "[\"https://${ALB_DNS}\"]" \
     --region us-east-2
 ```

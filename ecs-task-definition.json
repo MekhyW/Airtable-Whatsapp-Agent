@@ -39,10 +39,6 @@
           "value": "us-east-2"
         },
         {
-          "name": "WHATSAPP_API_VERSION",
-          "value": "v18.0"
-        },
-        {
           "name": "RATE_LIMIT_PER_MINUTE",
           "value": "60"
         },
@@ -115,6 +111,10 @@
         {
           "name": "WHATSAPP_WEBHOOK_URL",
           "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_WEBHOOK_URL::"
+        },
+        {
+          "name": "WHATSAPP_API_VERSION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_API_VERSION::"
         },
         {
           "name": "AIRTABLE_API_KEY",
