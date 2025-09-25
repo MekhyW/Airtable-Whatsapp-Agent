@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 from pydantic import BaseModel
 from .base import MCPRequest, MCPResponse
-from ..utils.error_handling import error_handler, retry_on_failure, EXTERNAL_MCP_RETRY_CONFIG
+from ..utils.error_handling import error_handler, retry_on_failure, EXTERNAL_MCP_RETRY_CONFIG, CircuitBreakerConfig
 from ..utils.rate_limiter import RateLimiter, RateLimitMiddleware, EXTERNAL_MCP_RATE_LIMIT
 
 logger = logging.getLogger(__name__)
@@ -34,11 +34,11 @@ class ExternalMCPClient:
         self.logger = logging.getLogger(f"{__name__}.{config.name}")
         self.circuit_breaker = error_handler.register_circuit_breaker(
             f"external_mcp_{config.name}",
-            {
-                "failure_threshold": 5,
-                "recovery_timeout": 60,
-                "name": f"external_mcp_{config.name}"
-            }
+            CircuitBreakerConfig(
+                failure_threshold=5,
+                recovery_timeout=60,
+                name=f"external_mcp_{config.name}"
+            )
         )
     
     async def initialize(self) -> None:
