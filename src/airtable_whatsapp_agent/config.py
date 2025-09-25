@@ -65,7 +65,6 @@ class Settings(BaseSettings):
     mcp_timeout_seconds: int = Field(default=30, env="MCP_TIMEOUT_SECONDS")
     
     # Monitoring and Observability
-    sentry_dsn: Optional[str] = Field(default=None, env="SENTRY_DSN")
     prometheus_multiproc_dir: str = Field(default="/tmp/prometheus_multiproc_dir", env="PROMETHEUS_MULTIPROC_DIR")
     jaeger_agent_host: str = Field(default="localhost", env="JAEGER_AGENT_HOST")
     jaeger_agent_port: int = Field(default=6831, env="JAEGER_AGENT_PORT")

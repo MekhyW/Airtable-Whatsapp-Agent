@@ -34,4 +34,3 @@ click>=8.1.0
 
 # Production dependencies
 gunicorn>=21.2.0
-sentry-sdk[fastapi]>=1.38.0
