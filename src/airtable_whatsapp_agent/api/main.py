@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     try:
         settings = Settings()
         set_app_state("settings", settings)
-        mcp_manager = MCPServerManager()
+        mcp_manager = MCPServerManager(settings)
         await mcp_manager.initialize()
         set_app_state("mcp_manager", mcp_manager)
         agent = AutonomousAgent(
