@@ -13,6 +13,7 @@ import uvicorn
 from .webhooks import router as webhooks_router
 from .admin import router as admin_router
 from .middleware import setup_middleware
+from .app_state import app_state, get_app_state, set_app_state
 from ..agent import AutonomousAgent
 from ..mcp import MCPServerManager
 from ..config import Settings
@@ -21,30 +22,23 @@ from ..config import Settings
 logger = logging.getLogger(__name__)
 
 
-app_state = {
-    "agent": None,
-    "mcp_manager": None,
-    "settings": None
-}
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting up application...")
     try:
         settings = Settings()
-        app_state["settings"] = settings
+        set_app_state("settings", settings)
         mcp_manager = MCPServerManager()
         await mcp_manager.initialize()
-        app_state["mcp_manager"] = mcp_manager
+        set_app_state("mcp_manager", mcp_manager)
         agent = AutonomousAgent(
             mcp_manager=mcp_manager,
             openai_api_key=settings.openai_api_key,
             max_concurrent_sessions=settings.max_concurrent_sessions,
             session_timeout_minutes=settings.session_timeout_minutes
         )
-        app_state["agent"] = agent
+        set_app_state("agent", agent)
         logger.info("Application startup complete")
         yield
     except Exception as e:
@@ -52,10 +46,11 @@ async def lifespan(app: FastAPI):
         raise
     logger.info("Shutting down application...")
     try:
-        if app_state["agent"]:
-            await app_state["agent"].shutdown()
-        if app_state["mcp_manager"]:
-            await app_state["mcp_manager"].shutdown()
+        current_state = get_app_state()
+        if current_state["agent"]:
+            await current_state["agent"].shutdown()
+        if current_state["mcp_manager"]:
+            await current_state["mcp_manager"].shutdown()
         logger.info("Application shutdown complete")
     except Exception as e:
         logger.error(f"Shutdown error: {str(e)}")
@@ -68,7 +63,8 @@ def create_app() -> FastAPI:
         description="Autonomous AI agent for WhatsApp and Airtable integration",
         lifespan=lifespan
     )
-    settings = app_state.get("settings")
+    current_state = get_app_state()
+    settings = current_state.get("settings")
     webhook_verify_token = settings.whatsapp_webhook_verify_token if settings else None
     setup_middleware(app, webhook_verify_token)
     app.add_middleware(
@@ -93,14 +89,15 @@ def create_app() -> FastAPI:
     async def health_check():
         """Health check endpoint."""
         try:
-            mcp_health = await app_state["mcp_manager"].health_check() if app_state["mcp_manager"] else False
-            agent_metrics = await app_state["agent"].get_metrics() if app_state["agent"] else {}
+            current_state = get_app_state()
+            mcp_health = await current_state["mcp_manager"].health_check() if current_state["mcp_manager"] else False
+            agent_metrics = await current_state["agent"].get_metrics() if current_state["agent"] else {}
             return {
                 "status": "healthy" if mcp_health else "degraded",
                 "timestamp": datetime.now().isoformat(),
                 "services": {
                     "mcp_manager": "healthy" if mcp_health else "unhealthy",
-                    "agent": "healthy" if app_state["agent"] else "unhealthy"
+                    "agent": "healthy" if current_state["agent"] else "unhealthy"
                 },
                 "metrics": agent_metrics
             }
@@ -130,11 +127,6 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=exc.status_code, content={"error": exc.detail, "status_code": exc.status_code})
 
     return app
-
-
-def get_app_state() -> Dict[str, Any]:
-    """Get application state."""
-    return app_state
 
 
 def run_server(

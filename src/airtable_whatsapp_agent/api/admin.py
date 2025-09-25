@@ -6,7 +6,7 @@ import logging
 from typing import Dict
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from .main import get_app_state
+from .app_state import get_app_state
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
