@@ -1,0 +1,180 @@
+{
+  "family": "airtable-whatsapp-agent",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/airtable-whatsapp-agent-task-role",
+  "containerDefinitions": [
+    {
+      "name": "airtable-whatsapp-agent",
+      "image": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/airtable-whatsapp-agent:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "DEBUG",
+          "value": "false"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        },
+        {
+          "name": "API_V1_STR",
+          "value": "/api/v1"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-2"
+        },
+        {
+          "name": "WHATSAPP_API_VERSION",
+          "value": "v18.0"
+        },
+        {
+          "name": "RATE_LIMIT_PER_MINUTE",
+          "value": "60"
+        },
+        {
+          "name": "MCP_TIMEOUT_SECONDS",
+          "value": "30"
+        },
+        {
+          "name": "MCP_MAX_RETRIES",
+          "value": "3"
+        },
+        {
+          "name": "MCP_RETRY_DELAY",
+          "value": "1.0"
+        },
+        {
+          "name": "WORKERS",
+          "value": "2"
+        },
+        {
+          "name": "HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "PORT",
+          "value": "8000"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:DATABASE_URL::"
+        },
+        {
+          "name": "REDIS_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:REDIS_URL::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:OPENAI_API_KEY::"
+        },
+        {
+          "name": "OPENAI_MODEL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:OPENAI_MODEL::"
+        },
+        {
+          "name": "OPENAI_MAX_TOKENS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:OPENAI_MAX_TOKENS::"
+        },
+        {
+          "name": "OPENAI_TEMPERATURE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:OPENAI_TEMPERATURE::"
+        },
+        {
+          "name": "WHATSAPP_ACCESS_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_ACCESS_TOKEN::"
+        },
+        {
+          "name": "WHATSAPP_PHONE_NUMBER_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_PHONE_NUMBER_ID::"
+        },
+        {
+          "name": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_BUSINESS_ACCOUNT_ID::"
+        },
+        {
+          "name": "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_WEBHOOK_VERIFY_TOKEN::"
+        },
+        {
+          "name": "WHATSAPP_WEBHOOK_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:WHATSAPP_WEBHOOK_URL::"
+        },
+        {
+          "name": "AIRTABLE_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AIRTABLE_API_KEY::"
+        },
+        {
+          "name": "AIRTABLE_BASE_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AIRTABLE_BASE_ID::"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_SECRET_ACCESS_KEY::"
+        },
+        {
+          "name": "AWS_EVENTBRIDGE_BUS_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_EVENTBRIDGE_BUS_NAME::"
+        },
+        {
+          "name": "AWS_ECS_CLUSTER_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_ECS_CLUSTER_NAME::"
+        },
+        {
+          "name": "AWS_ECR_REPOSITORY_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_ECR_REPOSITORY_URI::"
+        },
+        {
+          "name": "CORS_ORIGINS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:CORS_ORIGINS::"
+        },
+        {
+          "name": "MCP_AIRTABLE_SERVER_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:MCP_AIRTABLE_SERVER_URL::"
+        },
+        {
+          "name": "MCP_WHATSAPP_SERVER_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:MCP_WHATSAPP_SERVER_URL::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/airtable-whatsapp-agent",
+          "awslogs-region": "us-east-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

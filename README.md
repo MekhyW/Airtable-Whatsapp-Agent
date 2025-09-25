@@ -113,50 +113,171 @@ docker-compose down
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## ☁️ AWS Cloud Deployment
+## ☁️ AWS ECS Deployment
 
-#### 1. Create ECR Repository
+### 1. Create ECR Repository
 
 ```bash
-aws ecr create-repository --repository-name airtable-whatsapp-agent
+aws ecr create-repository --repository-name airtable-whatsapp-agent --region us-east-2
 ```
 
-#### 2. Build and Push Docker Image
+### 2. Build and Push Docker Image
 
 ```bash
 # Get login token
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com
 
 # Build image
 docker build -t airtable-whatsapp-agent .
 
 # Tag image
-docker tag airtable-whatsapp-agent:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/airtable-whatsapp-agent:latest
+docker tag airtable-whatsapp-agent:latest YOUR_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/airtable-whatsapp-agent:latest
 
 # Push image
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/airtable-whatsapp-agent:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/airtable-whatsapp-agent:latest
 ```
 
-#### 3. Create ECS Cluster
+### 3. Set Up AWS Secrets Manager
+
+Store sensitive configuration in AWS Secrets Manager for security, do it according to the secrets required by ecs-task-definition.json
+
+### 4. Create IAM Roles
+
+#### Task Execution Role
 
 ```bash
-aws ecs create-cluster --cluster-name airtable-whatsapp-cluster
+# Create the execution role
+aws iam create-role \
+    --role-name ecsTaskExecutionRole \
+    --assume-role-policy-document file://trust-policy.json
+
+# Attach AWS managed policy
+aws iam attach-role-policy \
+    --role-name ecsTaskExecutionRole \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+# Create and attach custom policy for secrets access
+aws iam create-policy \
+    --policy-name AirtableWhatsAppAgentSecretsPolicy \
+    --policy-document file://iam-task-execution-role-policy.json
+
+aws iam attach-role-policy \
+    --role-name ecsTaskExecutionRole \
+    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/AirtableWhatsAppAgentSecretsPolicy
 ```
 
-#### 4. Create Task Definition
+#### Task Role (for application permissions)
 
 ```bash
-aws ecs register-task-definition --cli-input-json file://task-definition.json
+# Create task role
+aws iam create-role \
+    --role-name airtable-whatsapp-agent-task-role \
+    --assume-role-policy-document file://trust-policy.json
+
+# Create and attach application policy
+aws iam create-policy \
+    --policy-name AirtableWhatsAppAgentTaskPolicy \
+    --policy-document file://iam-task-role-policy.json
+
+aws iam attach-role-policy \
+    --role-name airtable-whatsapp-agent-task-role \
+    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/AirtableWhatsAppAgentTaskPolicy
 ```
 
-#### 5. Create ECS Service
+### 5. Create CloudWatch Log Group
+
+```bash
+aws logs create-log-group \
+    --log-group-name /ecs/airtable-whatsapp-agent \
+    --region us-east-2
+```
+
+### 6. Create ECS Cluster
+
+```bash
+aws ecs create-cluster \
+    --cluster-name airtable-whatsapp-agent-cluster \
+    --region us-east-2
+```
+
+### 7. Register Task Definition
+
+Update the task definition file with your account ID and register it:
+
+```bash
+# Update YOUR_ACCOUNT_ID in ecs-task-definition.json
+sed -i 's/YOUR_ACCOUNT_ID/123456789012/g' ecs-task-definition.json
+
+# Register the task definition
+aws ecs register-task-definition \
+    --cli-input-json file://ecs-task-definition.json \
+    --region us-east-2
+```
+
+### 8. Create Application Load Balancer
+
+```bash
+# Create ALB
+aws elbv2 create-load-balancer \
+    --name airtable-whatsapp-agent-alb \
+    --subnets subnet-12345678 subnet-87654321 \
+    --security-groups sg-12345678 \
+    --region us-east-2
+
+# Create target group
+aws elbv2 create-target-group \
+    --name airtable-whatsapp-agent-tg \
+    --protocol HTTP \
+    --port 8000 \
+    --vpc-id vpc-12345678 \
+    --target-type ip \
+    --health-check-path /health \
+    --region us-east-2
+
+# Create listener
+aws elbv2 create-listener \
+    --load-balancer-arn arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:loadbalancer/app/airtable-whatsapp-agent-alb/1234567890123456 \
+    --protocol HTTP \
+    --port 80 \
+    --default-actions Type=forward,TargetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456 \
+    --region us-east-2
+```
+
+### 9. Create ECS Service
 
 ```bash
 aws ecs create-service \
-  --cluster airtable-whatsapp-cluster \
-  --service-name airtable-whatsapp-service \
-  --task-definition airtable-whatsapp-agent:1 \
-  --desired-count 1
+    --cluster airtable-whatsapp-agent-cluster \
+    --service-name airtable-whatsapp-agent-service \
+    --task-definition airtable-whatsapp-agent:1 \
+    --desired-count 1 \
+    --launch-type FARGATE \
+    --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678,subnet-87654321],securityGroups=[sg-12345678],assignPublicIp=ENABLED}" \
+    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456,containerName=airtable-whatsapp-agent,containerPort=8000 \
+    --region us-east-2
+```
+
+### 10. Update Secrets with Actual Domain
+
+```bash
+# Get ALB DNS name
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+    --names airtable-whatsapp-agent-alb \
+    --query 'LoadBalancers[0].DNSName' \
+    --output text \
+    --region us-east-2)
+
+# Update webhook URL secret
+aws secretsmanager update-secret \
+    --secret-id "airtable-whatsapp-agent/whatsapp-webhook-url" \
+    --secret-string "https://${ALB_DNS}/api/v1/webhooks/whatsapp" \
+    --region us-east-2
+
+# Update CORS origins
+aws secretsmanager update-secret \
+    --secret-id "airtable-whatsapp-agent/cors-origins" \
+    --secret-string "[\"https://${ALB_DNS}\"]" \
+    --region us-east-2
 ```
 
 ## 📊 Monitoring
@@ -199,31 +320,4 @@ docker-compose logs -f
 
 # Debug mode (local development)
 AIRTABLE_WHATSAPP_DEBUG=true python -m uvicorn src.airtable_whatsapp_agent.api.main:app --reload
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔄 Updates and Maintenance
-
-### Updating Dependencies
-
-```bash
-# Update Python packages
-pip install --upgrade -r requirements.txt
-
-# Update Docker images
-docker-compose pull
-docker-compose up -d
-```
-
-### Backup and Recovery
-
-```bash
-# Backup database (if using PostgreSQL)
-docker-compose exec db pg_dump -U username dbname > backup.sql
-
-# Restore database
-docker-compose exec -T db psql -U username dbname < backup.sql
 ```

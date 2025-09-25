@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "events:PutEvents"
+      ],
+      "Resource": [
+        "arn:aws:events:us-east-2:YOUR_ACCOUNT_ID:event-bus/airtable-whatsapp-agent-events"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTasks",
+        "ecs:DescribeServices"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
