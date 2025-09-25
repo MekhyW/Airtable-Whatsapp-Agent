@@ -28,6 +28,7 @@ from .agent import (
     AgentTask,
     AgentDecision,
     ConversationContext,
+    ToolExecutionResult,
 )
 
 
@@ -56,4 +57,5 @@ __all__ = [
     "AgentTask",
     "AgentDecision",
     "ConversationContext",
+    "ToolExecutionResult",
 ]

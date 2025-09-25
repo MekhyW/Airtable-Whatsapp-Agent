@@ -211,6 +211,14 @@ class AgentWorkflow(BaseModel):
     error_handling: Dict[str, Any] = Field(default_factory=dict, description="Error handling configuration")
 
 
+class ToolExecutionResult(BaseModel):
+    """Result of tool execution."""
+    success: bool = Field(..., description="Whether the tool execution was successful")
+    result: Optional[Any] = Field(None, description="The result of the tool execution")
+    error: Optional[str] = Field(None, description="Error message if execution failed")
+    execution_time: float = Field(..., description="Time taken to execute the tool in seconds")
+
+
 class AgentMetrics(BaseModel):
     """Agent performance metrics."""
     agent_id: str = Field(..., description="Agent identifier")
