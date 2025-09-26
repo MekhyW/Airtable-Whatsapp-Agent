@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     
     # AWS Configuration
     aws_region: str = Field(default="us-east-1", env="AWS_REGION")
+    aws_account_id: Optional[str] = Field(default=None, env="AWS_ACCOUNT_ID")
     aws_access_key_id: Optional[str] = Field(default=None, env="AWS_ACCESS_KEY_ID")
     aws_secret_access_key: Optional[str] = Field(default=None, env="AWS_SECRET_ACCESS_KEY")
     aws_eventbridge_bus_name: str = Field(default="airtable-whatsapp-agent-events", env="AWS_EVENTBRIDGE_BUS_NAME")
