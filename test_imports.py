@@ -137,6 +137,50 @@ def main():
             print(f"   Error: {e}")
             failed_imports.append(import_path)
     
+    # Test configuration-related functionality
+    print("\n⚙️ Configuration Tests:")
+    
+    # Test CircuitBreaker with dictionary configuration
+    try:
+        from airtable_whatsapp_agent.utils.error_handling import CircuitBreaker, CircuitBreakerConfig
+        config_obj = CircuitBreakerConfig(name="test_circuit_breaker", failure_threshold=3)
+        _ = CircuitBreaker(config_obj)
+        print("✅ CircuitBreaker with CircuitBreakerConfig object")
+        config_dict = {"name": "test_dict_circuit_breaker", "failure_threshold": 5, "recovery_timeout": 30}
+        _ = CircuitBreaker(config_dict)
+        print("✅ CircuitBreaker with dictionary configuration")
+        from airtable_whatsapp_agent.utils.error_handling import error_handler
+        _ = error_handler.register_circuit_breaker("test_registration", config_dict)
+        print("✅ Error handler circuit breaker registration with dictionary")
+        from airtable_whatsapp_agent.utils.error_handling import circuit_breaker
+        _ = circuit_breaker("test_convenience", config_dict)
+        print("✅ Circuit breaker convenience function with dictionary")
+    except Exception as e:
+        print(f"❌ CircuitBreaker configuration tests")
+        print(f"   Error: {e}")
+        failed_imports.append("CircuitBreaker configuration tests")
+    
+    # Test ExternalMCPClient initialization
+    try:
+        from airtable_whatsapp_agent.mcp.external_client import ExternalMCPClient, ExternalMCPServerConfig
+        _ = ExternalMCPServerConfig(name="test_server", url="http://localhost:8080", timeout=30) # Don't actually initialize the client (would require network), just test config creation
+        print("✅ ExternalMCPServerConfig creation")
+        
+    except Exception as e:
+        print(f"❌ ExternalMCPClient configuration test")
+        print(f"   Error: {e}")
+        failed_imports.append("ExternalMCPClient configuration test")
+    
+    # Test configuration manager functionality
+    try:
+        from airtable_whatsapp_agent.utils.config_manager import ConfigManager, AppConfig
+        _ = ConfigManager()
+        print("✅ ConfigManager creation")
+    except Exception as e:
+        print(f"❌ ConfigManager test")
+        print(f"   Error: {e}")
+        failed_imports.append("ConfigManager test")
+    
     # Summary
     print(f"\n📋 Summary:")
     print(f"Total modules tested: {len(modules_to_test) + len(model_modules) + len(api_modules) + len(agent_modules) + len(util_modules) + len(mcp_modules) + len(aws_modules) + len(specific_tests)}")

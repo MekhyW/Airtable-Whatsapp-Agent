@@ -91,11 +91,14 @@ class CircuitBreaker:
     """Circuit breaker implementation for fault tolerance."""
     
     def __init__(self, config: CircuitBreakerConfig):
-        self.config = config
+        if isinstance(config, dict):
+            self.config = CircuitBreakerConfig(**config)
+        else:
+            self.config = config
         self.failure_count = 0
         self.last_failure_time: Optional[datetime] = None
         self.state = CircuitBreakerState.CLOSED
-        self.logger = logging.getLogger(f"circuit_breaker.{config.name}")
+        self.logger = logging.getLogger(f"circuit_breaker.{self.config.name}")
     
     def __call__(self, func: Callable) -> Callable:
         """Decorator to apply circuit breaker to a function."""
@@ -148,6 +151,8 @@ class ErrorHandler:
     
     def register_circuit_breaker(self, name: str, config: CircuitBreakerConfig) -> CircuitBreaker:
         """Register a circuit breaker."""
+        if isinstance(config, dict):
+            config = CircuitBreakerConfig(**config)
         circuit_breaker = CircuitBreaker(config)
         self.circuit_breakers[name] = circuit_breaker
         return circuit_breaker
@@ -270,6 +275,8 @@ def circuit_breaker(name: str, config: CircuitBreakerConfig = None):
     """Convenience decorator for circuit breaker."""
     if config is None:
         config = CircuitBreakerConfig(name=name)
+    elif isinstance(config, dict):
+        config = CircuitBreakerConfig(**config)
     cb = error_handler.register_circuit_breaker(name, config)
     return cb
 
