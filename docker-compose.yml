@@ -1,31 +1,48 @@
-version: '3.8'
-
 services:
-  # Main application service
+  # Main application service with integrated MCP servers
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+    image: ${ECR_REGISTRY:-}${ECR_REPOSITORY:-airtable-whatsapp-agent}:${IMAGE_TAG:-latest}
     container_name: airtable-whatsapp-agent
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Main application
+      - "8001:8001"  # WhatsApp MCP Server
+      - "8002:8002"  # Airtable MCP Server
     environment:
-      - ENVIRONMENT=development
-      - LOG_LEVEL=INFO
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - HOST=0.0.0.0
       - PORT=8000
+      # MCP Server URLs (internal)
+      - MCP_WHATSAPP_SERVER_URL=http://localhost:8001
+      - MCP_AIRTABLE_SERVER_URL=http://localhost:8002
+      - MCP_TIMEOUT_SECONDS=30
+      - MCP_MAX_RETRIES=3
+      - MCP_RETRY_DELAY=1.0
+      # AWS Configuration (for production)
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-2}
     env_file:
       - .env
     volumes:
-      - ./logs:/app/logs
-      - ./data:/app/data
+      - ${LOG_PATH:-./logs}:/app/logs
+      - ${DATA_PATH:-./data}:/app/data
     networks:
       - app-network
     depends_on:
       - redis
       - postgres
+    deploy:
+      resources:
+        limits:
+          cpus: ${CPU_LIMIT:-2.0}
+          memory: ${MEMORY_LIMIT:-2G}
+        reservations:
+          cpus: ${CPU_RESERVATION:-1.0}
+          memory: ${MEMORY_RESERVATION:-1G}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -95,7 +112,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Monitoring with Prometheus
+  # Monitoring with Prometheus (optional)
   prometheus:
     image: prom/prometheus:latest
     container_name: airtable-whatsapp-prometheus
@@ -114,8 +131,10 @@ services:
       - '--web.enable-lifecycle'
     networks:
       - app-network
+    profiles:
+      - monitoring
 
-  # Grafana for visualization
+  # Grafana for visualization (optional)
   grafana:
     image: grafana/grafana:latest
     container_name: airtable-whatsapp-grafana
@@ -133,8 +152,10 @@ services:
       - app-network
     depends_on:
       - prometheus
+    profiles:
+      - monitoring
 
-  # Log aggregation with Fluentd
+  # Log aggregation with Fluentd (optional for development)
   fluentd:
     build:
       context: ./logging
@@ -142,62 +163,17 @@ services:
     container_name: airtable-whatsapp-fluentd
     restart: unless-stopped
     volumes:
-      - ./logs:/fluentd/log
+      - ${LOG_PATH:-./logs}:/fluentd/log
       - ./logging/fluent.conf:/fluentd/etc/fluent.conf
     ports:
       - "24224:24224"
       - "24224:24224/udp"
     networks:
       - app-network
+    profiles:
+      - monitoring
 
-  # WhatsApp MCP Server (Public)
-  whatsapp-mcp:
-    image: node:18-alpine
-    container_name: whatsapp-mcp-server
-    restart: unless-stopped
-    working_dir: /app
-    command: >
-      sh -c "
-        npm install -g whatsapp-mcp-server &&
-        whatsapp-mcp --host 0.0.0.0 --port 8001
-      "
-    ports:
-      - "8001:8001"
-    environment:
-      - GREENAPI_ID_INSTANCE=${GREENAPI_ID_INSTANCE}
-      - GREENAPI_API_TOKEN=${GREENAPI_API_TOKEN}
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # Airtable MCP Server (Public)
-  airtable-mcp:
-    image: node:18-alpine
-    container_name: airtable-mcp-server
-    restart: unless-stopped
-    working_dir: /app
-    command: >
-      sh -c "
-        npm install -g @domdomegg/airtable-mcp-server &&
-        npx airtable-mcp-server
-      "
-    ports:
-      - "8002:8000"
-    environment:
-      - AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
-      - HOST=0.0.0.0
-      - PORT=8000
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   app-network:

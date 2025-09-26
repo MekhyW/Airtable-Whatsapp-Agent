@@ -1,0 +1,32 @@
+# Fluentd Docker image for log aggregation
+FROM fluent/fluentd:v1.16-debian-1
+
+# Use root user to install gems
+USER root
+
+# Install required gems
+RUN ["gem", "install", "fluent-plugin-elasticsearch", "--no-document", "--version", "5.2.4"]
+RUN ["gem", "install", "fluent-plugin-prometheus", "--no-document"]
+RUN ["gem", "install", "fluent-plugin-record-modifier", "--no-document"]
+
+# Create fluentd user and group
+RUN groupadd -r fluentd && useradd -r -g fluentd fluentd
+
+# Create necessary directories
+RUN mkdir -p /fluentd/log /fluentd/etc /fluentd/plugins \
+    && chown -R fluentd:fluentd /fluentd
+
+# Copy configuration
+COPY fluent.conf /fluentd/etc/
+
+# Switch to fluentd user
+USER fluentd
+
+# Expose ports
+EXPOSE 24224 24224/udp
+
+# Set working directory
+WORKDIR /fluentd
+
+# Start fluentd
+CMD ["fluentd", "-c", "/fluentd/etc/fluent.conf", "-v"]

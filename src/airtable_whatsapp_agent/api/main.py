@@ -4,7 +4,6 @@ Main FastAPI application setup.
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Dict, Any
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +12,7 @@ import uvicorn
 from .webhooks import router as webhooks_router
 from .admin import router as admin_router
 from .middleware import setup_middleware
-from .app_state import app_state, get_app_state, set_app_state
+from .app_state import get_app_state, set_app_state
 from ..agent import AutonomousAgent
 from ..mcp import MCPServerManager
 from ..config import Settings
@@ -33,10 +32,10 @@ async def lifespan(app: FastAPI):
         await mcp_manager.initialize()
         set_app_state("mcp_manager", mcp_manager)
         agent = AutonomousAgent(
-            mcp_manager=mcp_manager,
+            mcp_manager=mcp_manager, 
             openai_api_key=settings.openai_api_key,
-            max_concurrent_sessions=settings.max_concurrent_sessions,
-            session_timeout_minutes=settings.session_timeout_minutes
+            settings=settings,
+            max_concurrent_sessions=settings.max_concurrent_sessions
         )
         set_app_state("agent", agent)
         logger.info("Application startup complete")
@@ -67,23 +66,9 @@ def create_app() -> FastAPI:
     settings = current_state.get("settings")
     webhook_verify_token = settings.whatsapp_webhook_verify_token if settings else None
     setup_middleware(app, webhook_verify_token)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    app.include_router(
-        webhooks_router,
-        prefix="/webhooks",
-        tags=["webhooks"]
-    )
-    app.include_router(
-        admin_router,
-        prefix="/admin",
-        tags=["admin"]
-    )
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
+    app.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
+    app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
     @app.get("/health")
     async def health_check():
@@ -129,12 +114,7 @@ def create_app() -> FastAPI:
     return app
 
 
-def run_server(
-    host: str = "0.0.0.0",
-    port: int = 8000,
-    reload: bool = False,
-    log_level: str = "info"
-):
+def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False, log_level: str = "info"):
     """Run the FastAPI server."""
     uvicorn.run(
         "airtable_whatsapp_agent.api.main:create_app",

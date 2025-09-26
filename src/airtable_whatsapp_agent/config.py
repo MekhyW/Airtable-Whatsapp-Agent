@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     agent_max_iterations: int = Field(default=10, env="AGENT_MAX_ITERATIONS")
     agent_timeout_seconds: int = Field(default=300, env="AGENT_TIMEOUT_SECONDS")
     agent_memory_size: int = Field(default=1000, env="AGENT_MEMORY_SIZE")
+    max_concurrent_sessions: int = Field(default=10, env="MAX_CONCURRENT_SESSIONS")
     
     # MCP Server Configuration
     mcp: MCPSettings = Field(default_factory=MCPSettings)
