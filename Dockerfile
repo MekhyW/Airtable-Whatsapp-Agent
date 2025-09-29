@@ -26,7 +26,7 @@ RUN pip install --upgrade pip && \
 FROM node:18-alpine as node-builder
 
 # Install MCP servers globally
-RUN npm install -g airtable-mcp-server
+RUN npm install -g airtable-mcp-server wweb-mcp
 
 # Production stage
 FROM python:3.11-slim as production
@@ -37,10 +37,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     NODE_VERSION=18.19.0
 
-# Install runtime dependencies including Node.js
+# Install runtime dependencies including Node.js and supervisor
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
@@ -64,23 +65,28 @@ COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
 
+# Copy supervisord configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Install the application in development mode
 RUN pip install -e .
 
-# Create necessary directories and users
-RUN groupadd -r appuser && useradd -r -g appuser appuser \
-    && mkdir -p /app/logs /app/data \
-    && chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+# Create user and supervisor log directory
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    mkdir -p /app/logs /app/data /var/log/supervisor && \
+    chown -R appuser:appuser /app /var/log/supervisor && \
+    mkdir -p /home/appuser/.npm && \
+    chown -R appuser:appuser /home/appuser
 
 # Expose ports
-EXPOSE 8000
+EXPOSE 8000 8001 8002
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the main application directly
-CMD ["python", "-m", "airtable_whatsapp_agent.cli", "run", "--host", "0.0.0.0", "--port", "8000"]
+# Switch to root for supervisord
+USER root
+
+# Run supervisord to manage all processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
