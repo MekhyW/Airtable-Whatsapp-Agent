@@ -73,14 +73,6 @@
         {
           "name": "PORT",
           "value": "8000"
-        },
-        {
-          "name": "MCP_WHATSAPP_SERVER_URL",
-          "value": "http://localhost:8001"
-        },
-        {
-          "name": "MCP_AIRTABLE_SERVER_URL",
-          "value": "http://localhost:8002"
         }
       ],
       "secrets": [
@@ -165,12 +157,12 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:CORS_ORIGINS::"
         },
         {
-          "name": "GREENAPI_ID_INSTANCE",
-          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:GREENAPI_ID_INSTANCE::"
+          "name": "MCP_WHATSAPP_SERVER_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:MCP_WHATSAPP_SERVER_URL::"
         },
         {
-          "name": "GREENAPI_API_TOKEN",
-          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:GREENAPI_API_TOKEN::"
+          "name": "MCP_AIRTABLE_SERVER_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:MCP_AIRTABLE_SERVER_URL::"
         }
       ],
       "logConfiguration": {
