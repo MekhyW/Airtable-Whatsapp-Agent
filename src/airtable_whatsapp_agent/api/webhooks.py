@@ -43,14 +43,18 @@ class WhatsAppWebhookHandler:
         
     async def _process_events(self):
         """Background task to process webhook events."""
+        logger.info("🔄 Started webhook event processing loop")
         while self.is_processing:
             try:
                 event = await asyncio.wait_for(self.processing_queue.get(), timeout=1.0)
+                logger.debug("🔍 Processing webhook event from queue")
                 await self._handle_event(event)
+                logger.debug("✅ Webhook event processed successfully")
             except asyncio.TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"Error processing webhook event: {str(e)}", exc_info=True)
+        logger.info("🛑 Webhook event processing loop stopped")
                 
     async def _handle_event(self, event: WhatsAppWebhook):
         """Handle a single webhook event."""
@@ -64,7 +68,21 @@ class WhatsAppWebhookHandler:
             if not message:
                 logger.warning("No message found in webhook event")
                 return
-            await agent.process_message(message)
+            logger.info(f"📥 RECEIVED WhatsApp message from {message.from_number}: {message.text or f'[{message.type} message]'}")
+            logger.debug(f"Message details: ID={message.id}, Type={message.type}, Timestamp={message.timestamp}")
+            session_id = await agent.process_message(
+                user_phone=message.from_number,
+                message=message.text or f"[{message.type} message]",
+                message_type=message.type,
+                context={
+                    "message_id": message.id,
+                    "timestamp": message.timestamp,
+                    "media_url": message.media_url,
+                    "context": message.context,
+                    "metadata": message.metadata
+                }
+            )
+            logger.info(f"✅ Message processed successfully. Session ID: {session_id}")
         except Exception as e:
             logger.error(f"Error handling webhook event: {str(e)}", exc_info=True)
             
@@ -145,10 +163,12 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.body()
         data = json.loads(body)
-        logger.info(f"Received webhook event: {json.dumps(data, indent=2)}")
+        logger.info(f"🌐 Received WhatsApp webhook event")
+        logger.debug(f"Webhook payload: {json.dumps(data, indent=2)}")
         event = WhatsAppWebhook(**data)
         await webhook_handler.start_processing()
         background_tasks.add_task(webhook_handler.queue_event, event)
+        logger.info(f"✅ Webhook event accepted and queued for processing")
         return {"status": "success"}
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON in webhook payload: {str(e)}")

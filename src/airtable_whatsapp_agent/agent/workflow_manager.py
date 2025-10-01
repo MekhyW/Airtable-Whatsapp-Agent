@@ -53,7 +53,9 @@ class WorkflowManager:
         """Start a new agent workflow session."""
         if not session_id:
             session_id = str(uuid.uuid4())
-        self.logger.info(f"Starting workflow for user {user_phone}, session {session_id}")
+        self.logger.info(f"🚀 Starting new workflow session {session_id} for user {user_phone}")
+        if initial_message:
+            self.logger.debug(f"Initial message: {initial_message}")
         if len(self.active_workflows) >= self.max_concurrent_sessions:
             raise Exception("Maximum concurrent sessions reached")
         initial_state = self.state_manager.create_initial_state(session_id=session_id, user_phone=user_phone, initial_message=initial_message, context=context)
@@ -66,18 +68,23 @@ class WorkflowManager:
         }
         self.metrics["total_sessions"] += 1
         asyncio.create_task(self._execute_workflow(session_id, initial_state))
+        self.logger.info(f"✅ Workflow session {session_id} started successfully")
         return session_id
         
     async def send_message(self, session_id: str, message: str, message_type: str = "text", metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Send a message to an active workflow session."""
         if session_id not in self.active_workflows:
-            self.logger.warning(f"Session {session_id} not found")
+            self.logger.warning(f"⚠️ Session {session_id} not found")
             return False
-        self.active_workflows[session_id]["last_activity"] = datetime.utcnow()
-        self.active_workflows[session_id]["message_count"] += 1
+        workflow = self.active_workflows[session_id]
+        user_phone = workflow["user_phone"]
+        self.logger.info(f"💬 Processing message in session {session_id} from {user_phone}: {message}")
+        workflow["last_activity"] = datetime.utcnow()
+        workflow["message_count"] += 1
         state = self.state_manager.get_state(session_id)
         if not state:
-            return False
+            self.logger.error(f"❌ State not found for session {session_id}")
+            return False 
         updates = {
             "current_message": message,
             "message_type": message_type,
@@ -87,6 +94,7 @@ class WorkflowManager:
             updates["metadata"].update(metadata)
         self.state_manager.update_state(session_id, updates)
         asyncio.create_task(self._resume_workflow(session_id))
+        self.logger.debug(f"Message queued for processing in session {session_id}")
         return True
         
     async def get_session_status(self, session_id: str) -> Optional[Dict[str, Any]]:
@@ -155,56 +163,75 @@ class WorkflowManager:
     async def _handle_workflow_result(self, session_id: str, result: AgentGraphState):
         """Handle workflow execution result."""
         try:
-            final_response = result["metadata"].get("final_response")
-            if final_response:
-                await self._send_whatsapp_response(result["user_phone"], final_response)
-            if session_id in self.active_workflows:
-                workflow = self.active_workflows[session_id]
-                if result["current_state"] == AgentState.WAITING_FOR_INPUT:
-                    workflow["status"] = "waiting"
-                elif result["current_state"] == AgentState.ERROR:
-                    workflow["status"] = "failed"
-                    self.metrics["failed_sessions"] += 1
-                else:
-                    workflow["status"] = "completed"
-                    self.metrics["successful_sessions"] += 1
-                duration = (datetime.utcnow() - workflow["start_time"]).total_seconds()
-                self._update_average_duration(duration)
-                for tool_name in result.get("tool_results", {}):
-                    self.metrics["tool_usage_count"][tool_name] = (self.metrics["tool_usage_count"].get(tool_name, 0) + 1)
+            workflow = self.active_workflows.get(session_id)
+            if not workflow:
+                return
+            workflow["last_activity"] = datetime.utcnow()
+            user_phone = workflow["user_phone"]
+            self.state_manager.update_state(session_id, {"current_state": result["current_state"], "updated_at": datetime.utcnow()})
+            response_text = result.get("response") or result["metadata"].get("final_response")
+            if not response_text:
+                response_text = "I've processed your message. How can I help you further?"
+            self.logger.info(f"📤 SENDING WhatsApp response to {user_phone}: {response_text}")
+            await self._send_whatsapp_response(user_phone, response_text)
+            if result["current_state"] == AgentState.WAITING_FOR_INPUT:
+                workflow["status"] = "waiting"
+            elif result["current_state"] == AgentState.ERROR:
+                workflow["status"] = "failed"
+                self.metrics["failed_sessions"] += 1
+            else:
+                workflow["status"] = "completed"
+                self.metrics["successful_sessions"] += 1
+            duration = (datetime.utcnow() - workflow["start_time"]).total_seconds()
+            self._update_average_duration(duration)
+            for tool_name in result.get("tool_results", {}):
+                self.metrics["tool_usage_count"][tool_name] = (self.metrics["tool_usage_count"].get(tool_name, 0) + 1)
         except Exception as e:
-            self.logger.error(f"Error handling workflow result: {str(e)}")
+            self.logger.error(f"❌ Error handling workflow result: {str(e)}")
+            await self._handle_workflow_error(session_id, str(e))
             
     async def _handle_workflow_error(self, session_id: str, error: str):
         """Handle workflow execution error."""
         self.logger.error(f"Workflow error for session {session_id}: {error}")
         self.metrics["error_count"] += 1
         if session_id in self.active_workflows:
-            self.active_workflows[session_id]["status"] = "failed"
-            self.active_workflows[session_id]["error"] = error
+            workflow = self.active_workflows[session_id]
+            workflow["status"] = "failed"
+            workflow["error"] = error
+            user_phone = workflow["user_phone"]
+            self.logger.error(f"❌ Workflow error for session {session_id} (user: {user_phone}): {error}")
+            error_message = "I encountered an error processing your request. Please try again or contact support if the issue persists."
+            self.logger.info(f"📤 SENDING error response to {user_phone}")
             self.metrics["failed_sessions"] += 1
         try:
             state = self.state_manager.get_state(session_id)
             if state:
-                await self._send_whatsapp_response(state["user_phone"], "I'm experiencing technical difficulties. Please try again later.")
+                await self._send_whatsapp_response(state["user_phone"], error_message if session_id in self.active_workflows else "I'm experiencing technical difficulties. Please try again later.")
         except Exception as e:
-            self.logger.error(f"Failed to send error message: {str(e)}")
+            self.logger.error(f"❌ Failed to send error message: {str(e)}")
             
     async def _send_whatsapp_response(self, user_phone: str, message: str):
-        """Send response via WhatsApp."""
+        """Send WhatsApp response to user."""
         try:
+            self.logger.debug(f"Attempting to send WhatsApp message to {user_phone}")
             result = await self.mcp_manager.call_tool(
-                "whatsapp",
-                "send_text_message",
+                "whatsapp-mcp",
+                "send_message",
                 {
                     "to": user_phone,
                     "message": message
                 }
             )
-            if not result.get("success", False):
-                self.logger.error(f"Failed to send WhatsApp message: {result}")
+            if result.get("success", False):
+                self.logger.info(f"✅ WhatsApp message sent successfully to {user_phone}")
+                self.logger.debug(f"Message content: {message}")
+                self.metrics["messages_sent"] = self.metrics.get("messages_sent", 0) + 1
+            else:
+                self.logger.error(f"❌ Failed to send WhatsApp message to {user_phone}: {result}")
+                self.metrics["failed_messages"] = self.metrics.get("failed_messages", 0) + 1
         except Exception as e:
-            self.logger.error(f"WhatsApp send error: {str(e)}")
+            self.logger.error(f"❌ WhatsApp send error to {user_phone}: {str(e)}")
+            self.metrics["failed_messages"] = self.metrics.get("failed_messages", 0) + 1
             
     def _update_average_duration(self, duration: float):
         """Update average session duration metric."""

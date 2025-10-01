@@ -48,15 +48,6 @@ The application will be available at `http://localhost:8000`
 
 Copy `.env.example` to `.env` and configure the required environment variables.
 
-### Configuration File
-
-Alternatively, use a YAML configuration file:
-
-```bash
-cp config.example.yaml config.yaml
-# Edit config.yaml with your settings
-```
-
 ## 🔌 MCP (Model Context Protocol) Architecture
 
 This application uses external MCP servers for enhanced modularity and maintainability:
@@ -149,7 +140,7 @@ Store sensitive configuration in AWS Secrets Manager for security, do it accordi
 # Create the execution role
 aws iam create-role \
     --role-name ecsTaskExecutionRole \
-    --assume-role-policy-document file://trust-policy.json
+    --assume-role-policy-document file://policies/trust-policy.json
 
 # Attach AWS managed policy
 aws iam attach-role-policy \
@@ -159,7 +150,7 @@ aws iam attach-role-policy \
 # Create and attach custom policy for secrets access
 aws iam create-policy \
     --policy-name AirtableWhatsAppAgentSecretsPolicy \
-    --policy-document file://iam-task-execution-role-policy.json
+    --policy-document file://policies/iam-task-execution-role-policy.json
 
 aws iam attach-role-policy \
     --role-name ecsTaskExecutionRole \
@@ -172,12 +163,12 @@ aws iam attach-role-policy \
 # Create task role
 aws iam create-role \
     --role-name airtable-whatsapp-agent-task-role \
-    --assume-role-policy-document file://trust-policy.json
+    --assume-role-policy-document file://policies/trust-policy.json
 
 # Create and attach application policy
 aws iam create-policy \
     --policy-name AirtableWhatsAppAgentTaskPolicy \
-    --policy-document file://iam-task-role-policy.json
+    --policy-document file://policies/iam-task-role-policy.json
 
 aws iam attach-role-policy \
     --role-name airtable-whatsapp-agent-task-role \
