@@ -42,6 +42,9 @@ dependencies = [
     "mcp>=0.4.0",
     "httpx>=0.25.0",
     
+    # Process management for Node.js MCP servers
+    "psutil>=5.9.0",
+    
     # Database and caching
     "sqlalchemy>=2.0.0",
     "alembic>=1.13.0",

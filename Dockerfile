@@ -25,8 +25,14 @@ RUN pip install --upgrade pip && \
 # Node.js stage for MCP servers
 FROM node:18-alpine as node-builder
 
-# Install MCP servers globally
-RUN npm install -g airtable-mcp-server wweb-mcp
+# Install Airtable MCP server globally
+RUN npm install -g airtable-mcp-server
+
+# Build WhatsApp Business MCP server
+WORKDIR /whatsapp-business-mcp
+COPY whatsapp-business-mcp/package*.json ./
+RUN npm ci --only=production
+COPY whatsapp-business-mcp/src ./src
 
 # Production stage
 FROM python:3.11-slim as production
@@ -42,11 +48,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     supervisor \
-    gnupg \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
@@ -60,6 +61,9 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy Node.js global packages from node-builder
 COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node-builder /usr/local/bin /usr/local/bin
+
+# Copy WhatsApp Business MCP server
+COPY --from=node-builder /whatsapp-business-mcp /app/whatsapp-business-mcp
 
 # Create application directory
 WORKDIR /app

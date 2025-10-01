@@ -205,3 +205,28 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# WhatsApp Business MCP Server
+# Exclude confidential data and environment files
+whatsapp-business-mcp/.env
+whatsapp-business-mcp/.env.local
+whatsapp-business-mcp/.env.production
+whatsapp-business-mcp/.env.development
+whatsapp-business-mcp/node_modules/
+whatsapp-business-mcp/npm-debug.log*
+whatsapp-business-mcp/yarn-debug.log*
+whatsapp-business-mcp/yarn-error.log*
+whatsapp-business-mcp/logs/
+whatsapp-business-mcp/*.log
+whatsapp-business-mcp/.DS_Store
+whatsapp-business-mcp/Thumbs.db
+
+# WhatsApp Business API credentials and keys
+**/whatsapp_access_token*
+**/whatsapp_business_account*
+**/whatsapp_phone_number*
+**/webhook_verify_token*
+**/*whatsapp*.key
+**/*whatsapp*.pem
+**/*whatsapp*.p12
+**/*whatsapp*.jks
