@@ -9,8 +9,8 @@ from pydantic_settings import BaseSettings
 
 class MCPSettings(BaseModel):
     """MCP Server Configuration settings."""
-    airtable_server_url: str = Field(default="http://localhost:8001", env="MCP_AIRTABLE_SERVER_URL")
-    whatsapp_server_url: str = Field(default="http://localhost:8002", env="MCP_WHATSAPP_SERVER_URL")
+    airtable_server_url: str = Field(default="http://localhost:8002", env="MCP_AIRTABLE_SERVER_URL")
+    whatsapp_server_url: str = Field(default="http://localhost:8001", env="MCP_WHATSAPP_SERVER_URL")
     timeout: int = Field(default=30, env="MCP_TIMEOUT_SECONDS")
     max_retries: int = Field(default=3, env="MCP_MAX_RETRIES")
     retry_delay: float = Field(default=1.0, env="MCP_RETRY_DELAY")

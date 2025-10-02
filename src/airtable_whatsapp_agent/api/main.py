@@ -62,13 +62,16 @@ def create_app() -> FastAPI:
         description="Autonomous AI agent for WhatsApp and Airtable integration",
         lifespan=lifespan
     )
-    current_state = get_app_state()
-    settings = current_state.get("settings")
-    webhook_verify_token = settings.whatsapp_webhook_verify_token if settings else None
-    setup_middleware(app, webhook_verify_token)
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
-    app.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
-    app.include_router(admin_router, prefix="/admin", tags=["admin"])
+    local_settings = Settings()
+    setup_middleware(
+        app,
+        webhook_verify_token=local_settings.whatsapp_webhook_verify_token,
+        rate_limit_per_minute=local_settings.rate_limit_per_minute,
+        webhook_url=local_settings.whatsapp_webhook_url,
+    )
+    app.add_middleware(CORSMiddleware, allow_origins=local_settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
+    app.include_router(webhooks_router, prefix=f"{local_settings.api_v1_str}/webhooks", tags=["webhooks"])
+    app.include_router(admin_router, prefix=f"{local_settings.api_v1_str}/admin", tags=["admin"])
 
     @app.get("/health")
     async def health_check():

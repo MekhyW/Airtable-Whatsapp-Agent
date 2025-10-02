@@ -82,13 +82,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 class WhatsAppWebhookMiddleware(BaseHTTPMiddleware):
     """Middleware for WhatsApp webhook validation."""
-    def __init__(self, app: FastAPI, webhook_verify_token: str):
+    def __init__(self, app: FastAPI, webhook_verify_token: str, webhook_url: str = None):
         super().__init__(app)
         self.webhook_verify_token = webhook_verify_token
+        self.expected_path_prefix = None
+        try:
+            if webhook_url:
+                from urllib.parse import urlparse
+                parsed = urlparse(webhook_url)
+                path = parsed.path or ""
+                self.expected_path_prefix = path.rstrip("/")
+        except Exception:
+            self.expected_path_prefix = None
         
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Validate WhatsApp webhook requests."""
-        if not request.url.path.startswith("/webhooks/whatsapp"):
+        expected_prefixes = ["/webhooks/whatsapp"]
+        if self.expected_path_prefix:
+            expected_prefixes.append(self.expected_path_prefix)
+        if not any(request.url.path.startswith(p) for p in expected_prefixes):
             return await call_next(request)
         if request.method == "GET":
             verify_token = request.query_params.get("hub.verify_token")
@@ -103,11 +115,11 @@ class WhatsAppWebhookMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-def setup_middleware(app: FastAPI, webhook_verify_token: str = None):
+def setup_middleware(app: FastAPI, webhook_verify_token: str = None, rate_limit_per_minute: int = 60, webhook_url: str = None):
     """Setup all middleware for the FastAPI application."""
     app.add_middleware(SecurityHeadersMiddleware)
-    app.add_middleware(RateLimitMiddleware, calls_per_minute=120)
+    app.add_middleware(RateLimitMiddleware, calls_per_minute=rate_limit_per_minute)
     if webhook_verify_token:
-        app.add_middleware(WhatsAppWebhookMiddleware, webhook_verify_token=webhook_verify_token)
+        app.add_middleware(WhatsAppWebhookMiddleware, webhook_verify_token=webhook_verify_token, webhook_url=webhook_url)
     app.add_middleware(RequestLoggingMiddleware)
     logger.info("Middleware setup complete")
