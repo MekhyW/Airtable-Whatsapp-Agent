@@ -219,7 +219,7 @@ aws elbv2 create-load-balancer \
 aws elbv2 create-target-group \
     --name airtable-whatsapp-agent-tg \
     --protocol HTTP \
-    --port 8000 \
+    --port 80 \
     --vpc-id vpc-12345678 \
     --target-type ip \
     --health-check-path /health \

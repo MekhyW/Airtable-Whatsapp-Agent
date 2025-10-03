@@ -37,11 +37,7 @@ services:
       - postgres
     deploy:
       resources:
-        limits:
-          cpus: ${CPU_LIMIT:-2.0}
-          memory: ${MEMORY_LIMIT:-2G}
         reservations:
-          cpus: ${CPU_RESERVATION:-1.0}
           memory: ${MEMORY_RESERVATION:-1G}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
