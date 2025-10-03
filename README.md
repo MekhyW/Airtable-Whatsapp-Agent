@@ -241,10 +241,11 @@ aws ecs create-service \
     --cluster airtable-whatsapp-agent-cluster \
     --service-name airtable-whatsapp-agent-service \
     --task-definition airtable-whatsapp-agent:1 \
+    --enable-execute-command \
     --desired-count 1 \
     --launch-type FARGATE \
     --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678,subnet-87654321],securityGroups=[sg-12345678],assignPublicIp=ENABLED}" \
-    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456,containerName=airtable-whatsapp-agent,containerPort=8000 \
+    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456,containerName=airtable-whatsapp-agent,containerPort=80 \
     --region us-east-2
 ```
 

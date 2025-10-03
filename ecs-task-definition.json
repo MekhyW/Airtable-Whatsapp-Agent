@@ -23,6 +23,10 @@
         {
           "containerPort": 8002,
           "protocol": "tcp"
+        },
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
         }
       ],
       "environment": [
@@ -182,6 +186,9 @@
         "timeout": 5,
         "retries": 3,
         "startPeriod": 60
+      },
+      "linuxParameters": {
+        "initProcessEnabled": true
       }
     }
   ]
