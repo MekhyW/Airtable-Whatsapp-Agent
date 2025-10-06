@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     
     # Security
     rate_limit_per_minute: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
-    cors_origins: List[str] = Field(default=["http://localhost:3000"], env="CORS_ORIGINS")
     
     # Agent Configuration
     agent_name: str = Field(default="AirtableWhatsAppAgent", env="AGENT_NAME")
@@ -87,14 +86,6 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0", env="HOST")
     port: int = Field(default=8000, env="PORT")
     
-    @validator("cors_origins", pre=True)
-    def assemble_cors_origins(cls, v):
-        """Parse CORS origins from string or list."""
-        if isinstance(v, str):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
-        raise ValueError("CORS origins must be a string or list")
     
     @validator("log_level")
     def validate_log_level(cls, v):

@@ -157,10 +157,6 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:AWS_ECR_REPOSITORY_URI::"
         },
         {
-          "name": "CORS_ORIGINS",
-          "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:CORS_ORIGINS::"
-        },
-        {
           "name": "MCP_WHATSAPP_SERVER_URL",
           "valueFrom": "arn:aws:secretsmanager:us-east-2:YOUR_ACCOUNT_ID:secret:airtable-whatsapp-agent:MCP_WHATSAPP_SERVER_URL::"
         },

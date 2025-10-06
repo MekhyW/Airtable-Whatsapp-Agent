@@ -86,7 +86,6 @@ class AirtableConfig:
 @dataclass
 class SecurityConfig:
     """Security configuration."""
-    cors_origins: List[str] = field(default_factory=lambda: ["*"])
     allowed_hosts: List[str] = field(default_factory=lambda: ["*"])
 
 
@@ -377,7 +376,6 @@ class ConfigManager:
             "rate_limit_window": config.airtable.rate_limit_window
         }
         result["security"] = {
-            "cors_origins": config.security.cors_origins,
             "allowed_hosts": config.security.allowed_hosts
         }
         result["monitoring"] = {

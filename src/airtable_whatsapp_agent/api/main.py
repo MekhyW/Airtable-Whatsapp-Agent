@@ -6,7 +6,6 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 from .webhooks import router as webhooks_router
@@ -69,7 +68,6 @@ def create_app() -> FastAPI:
         rate_limit_per_minute=local_settings.rate_limit_per_minute,
         webhook_url=local_settings.whatsapp_webhook_url,
     )
-    app.add_middleware(CORSMiddleware, allow_origins=local_settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
     app.include_router(webhooks_router, prefix=f"{local_settings.api_v1_str}/webhooks", tags=["webhooks"])
     app.include_router(admin_router, prefix=f"{local_settings.api_v1_str}/admin", tags=["admin"])
 
