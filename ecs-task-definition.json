@@ -15,18 +15,6 @@
         {
           "containerPort": 8000,
           "protocol": "tcp"
-        },
-        {
-          "containerPort": 8001,
-          "protocol": "tcp"
-        },
-        {
-          "containerPort": 8002,
-          "protocol": "tcp"
-        },
-        {
-          "containerPort": 80,
-          "protocol": "tcp"
         }
       ],
       "environment": [

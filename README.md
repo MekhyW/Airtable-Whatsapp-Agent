@@ -207,10 +207,14 @@ aws ecs register-task-definition \
 
 ### 8. Create Application Load Balancer
 
+Expose the FastAPI app via an Internet-facing ALB while the MCP servers remain internal to the task.
+
 ```bash
 # Create ALB
 aws elbv2 create-load-balancer \
     --name airtable-whatsapp-agent-alb \
+    --type application \
+    --scheme internet-facing \
     --subnets subnet-12345678 subnet-87654321 \
     --security-groups sg-12345678 \
     --region us-east-2
@@ -219,10 +223,12 @@ aws elbv2 create-load-balancer \
 aws elbv2 create-target-group \
     --name airtable-whatsapp-agent-tg \
     --protocol HTTP \
-    --port 80 \
+    --port 8000 \
     --vpc-id vpc-12345678 \
     --target-type ip \
+    --health-check-protocol HTTP \
     --health-check-path /health \
+    --health-check-port traffic-port \
     --region us-east-2
 
 # Create listener
@@ -236,6 +242,8 @@ aws elbv2 create-listener \
 
 ### 9. Create ECS Service
 
+Map the service to the ALB Target Group and the app container port `8000`.
+
 ```bash
 aws ecs create-service \
     --cluster airtable-whatsapp-agent-cluster \
@@ -245,7 +253,7 @@ aws ecs create-service \
     --desired-count 1 \
     --launch-type FARGATE \
     --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678,subnet-87654321],securityGroups=[sg-12345678],assignPublicIp=ENABLED}" \
-    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456,containerName=airtable-whatsapp-agent,containerPort=80 \
+    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:YOUR_ACCOUNT_ID:targetgroup/airtable-whatsapp-agent-tg/1234567890123456,containerName=airtable-whatsapp-agent,containerPort=8000 \
     --region us-east-2
 ```
 
