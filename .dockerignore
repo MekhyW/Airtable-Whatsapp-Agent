@@ -107,7 +107,6 @@ yarn-error.log*
 
 # Monitoring
 monitoring/
-grafana/
 prometheus/
 
 # Nginx
