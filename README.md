@@ -315,3 +315,9 @@ docker-compose logs -f
 # Debug mode (local development)
 AIRTABLE_WHATSAPP_DEBUG=true python -m uvicorn src.airtable_whatsapp_agent.api.main:app --reload
 ```
+
+## Infrastructure Troubleshooting
+
+- If the container task shows normal logs but the ALB cannot reach the container, it might be necessary to increase the health check timeout
+- If ALB health checks pass and the task is accessible via the public IP, but the ALB DNS is timing out, check if the security groups allow inbound and outbound traffic from ALL sources and ALL IPs (0.0.0.0/0)
+- Meta might block HTTP traffic, it might be necessary to create a HTTPS listener with a custom certificate and update the webhook URL to this HTTPS endpoint
