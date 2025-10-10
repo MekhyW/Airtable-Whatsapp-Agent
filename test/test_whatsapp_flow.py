@@ -7,6 +7,7 @@ This script simulates the complete message processing pipeline.
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any
 
@@ -21,6 +22,20 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+def maybe_post_to_cloud(webhook_payload: Dict[str, Any]):
+    """Optionally send payload to deployed test endpoint if AGENT_BASE_URL is set."""
+    base_url = os.getenv("AGENT_BASE_URL")
+    if not base_url:
+        return
+    try:
+        import requests
+        base_url = base_url.rstrip("/")
+        url = f"{base_url}/api/v1/webhooks/whatsapp/test"
+        resp = requests.post(url, json=webhook_payload, timeout=10)
+        logger.info(f"🌐 Posted test payload to {url} -> {resp.status_code}")
+    except Exception as e:
+        logger.error(f"Error posting to cloud endpoint: {e}")
 
 def create_test_webhook_payload() -> Dict[str, Any]:
     """Create a test WhatsApp webhook payload."""
@@ -101,6 +116,8 @@ async def simulate_message_flow():
     
     # Simulate metrics update
     logger.info("📊 Updated message metrics")
+    # Optionally send to cloud test endpoint to exercise deployed agent
+    maybe_post_to_cloud(webhook_payload)
     
     logger.info("🎉 Message flow simulation completed successfully!")
 

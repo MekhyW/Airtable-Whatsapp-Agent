@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import sys
+import os
 from datetime import datetime
 from typing import Dict, Any
 
@@ -28,6 +29,19 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+def maybe_post_to_cloud(webhook_payload: Dict[str, Any]):
+    base_url = os.getenv("AGENT_BASE_URL")
+    if not base_url:
+        return
+    try:
+        import requests
+        base_url = base_url.rstrip("/")
+        url = f"{base_url}/api/v1/webhooks/whatsapp/test"
+        resp = requests.post(url, json=webhook_payload, timeout=10)
+        logger.info(f"🌐 Posted test payload to {url} -> {resp.status_code}")
+    except Exception as e:
+        logger.error(f"Error posting to cloud endpoint: {e}")
 
 def create_test_webhook_payload() -> Dict[str, Any]:
     """Create a test WhatsApp webhook payload."""
@@ -74,41 +88,26 @@ def create_test_webhook_payload() -> Dict[str, Any]:
 async def simulate_message_flow():
     """Simulate the complete WhatsApp message processing flow."""
     logger.info("🧪 Starting WhatsApp message flow simulation")
-    
-    # Create test payload
     webhook_payload = create_test_webhook_payload()
     logger.info("📋 Created test webhook payload")
-    
-    # Log the payload (similar to what the webhook endpoint does)
     logger.info("🌐 Simulating webhook receipt")
     logger.debug(f"Webhook payload: {json.dumps(webhook_payload, indent=2)}")
-    
-    # Extract message info (similar to _extract_message)
     entry = webhook_payload["entry"][0]
     change = entry["changes"][0]
     value = change["value"]
     message_data = value["messages"][0]
-    
     user_phone = message_data["from"]
     message_text = message_data["text"]["body"]
     message_id = message_data["id"]
-    
     logger.info(f"📥 RECEIVED WhatsApp message from {user_phone}: {message_text}")
     logger.debug(f"Message details: ID={message_id}, Type=text")
-    
-    # Simulate agent processing
     logger.info(f"🚀 Starting new workflow session for user {user_phone}")
     logger.info(f"💬 Processing message: {message_text}")
-    
-    # Simulate response generation
     response_text = f"Thank you for your message: '{message_text}'. I'm here to help you with your project!"
-    
     logger.info(f"📤 SENDING WhatsApp response to {user_phone}: {response_text}")
     logger.info(f"✅ WhatsApp message sent successfully to {user_phone}")
-    
-    # Simulate metrics update
     logger.info("📊 Updated message metrics")
-    
+    maybe_post_to_cloud(webhook_payload)
     logger.info("🎉 Message flow simulation completed successfully!")
 
 def main():
