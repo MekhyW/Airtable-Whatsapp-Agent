@@ -6,6 +6,7 @@ import time
 import logging
 import uuid
 from fastapi import FastAPI, Request, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 
@@ -94,20 +95,22 @@ class WhatsAppWebhookMiddleware(BaseHTTPMiddleware):
                 self.expected_path_prefix = path.rstrip("/")
         except Exception:
             self.expected_path_prefix = None
-        
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Validate WhatsApp webhook requests."""
-        expected_prefixes = ["/webhooks/whatsapp"]
+        expected_prefixes = ["/webhooks/whatsapp", "/api/v1/webhooks/whatsapp"]
         if self.expected_path_prefix:
             expected_prefixes.append(self.expected_path_prefix)
         if not any(request.url.path.startswith(p) for p in expected_prefixes):
             return await call_next(request)
-        if request.method == "GET":
+        verification_paths = {"/webhooks/whatsapp", "/api/v1/webhooks/whatsapp"}
+        if self.expected_path_prefix:
+            verification_paths.add(self.expected_path_prefix)
+        if request.method == "GET" and request.url.path in verification_paths:
             verify_token = request.query_params.get("hub.verify_token")
             if verify_token != self.webhook_verify_token:
                 logger.warning(f"Invalid webhook verify token: {verify_token}")
-                from fastapi import HTTPException
-                raise HTTPException(status_code=403, detail="Invalid verify token")
+                raise StarletteHTTPException(status_code=403, detail="Invalid verify token")
         elif request.method == "POST":
             # Verify signature if needed
             # This would typically involve checking X-Hub-Signature-256 header
