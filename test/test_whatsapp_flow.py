@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def maybe_post_to_cloud(webhook_payload: Dict[str, Any]):
-    base_url = os.getenv("AGENT_BASE_URL")
+    base_url = os.getenv("AGENT_BASE_URL", "https://airwppa.linkschooltech.com")
     if not base_url:
         return
     try:
