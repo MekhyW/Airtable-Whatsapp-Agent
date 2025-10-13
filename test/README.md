@@ -14,7 +14,6 @@ How to Run
   `python test/test_cloud_endpoints.py`
 - Flow simulations (optionally post to cloud):
   `python test/test_whatsapp_flow.py`
-  `python test/test_whatsapp_flow_windows.py`
 
 Endpoints Used
 - Health: `<BASE_URL>/health`

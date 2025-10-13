@@ -7,7 +7,7 @@ import requests
 load_dotenv()
 
 def get_base_url() -> str:
-    base = os.getenv("AGENT_BASE_URL")
+    base = os.getenv("AGENT_BASE_URL", "https://airwppa.linkschooltech.com")
     return base.rstrip("/")
 
 def get_admin_url() -> str:
