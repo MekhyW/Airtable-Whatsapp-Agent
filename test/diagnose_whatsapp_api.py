@@ -19,7 +19,7 @@ class WhatsAppAPIDiagnostic:
         self.business_account_id = os.getenv('WHATSAPP_BUSINESS_ACCOUNT_ID')
         self.api_version = os.getenv('WHATSAPP_API_VERSION')
         self.mcp_whatsapp_url = "http://localhost:8000"
-        self.test_phone = "+551196132143"  # Recipient
+        self.test_phone = "+5511976132143"  # Recipient
         self.base_url = f"https://graph.facebook.com/{self.api_version}"
         
     def print_header(self, title):
