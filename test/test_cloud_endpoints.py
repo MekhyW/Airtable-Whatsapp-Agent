@@ -27,12 +27,12 @@ def create_sample_webhook_payload() -> dict:
                             "contacts": [
                                 {
                                     "profile": {"name": "Felipe Test User"},
-                                    "wa_id": "551196132143",
+                                    "wa_id": "5511976132143",
                                 }
                             ],
                             "messages": [
                                 {
-                                    "from": "551196132143",
+                                    "from": "5511976132143",
                                     "id": "wamid.cloudtest123",
                                     "timestamp": str(int(datetime.now().timestamp())),
                                     "text": {"body": "Hello from cloud test!"},
