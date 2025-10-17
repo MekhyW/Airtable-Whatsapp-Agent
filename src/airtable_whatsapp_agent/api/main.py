@@ -16,6 +16,7 @@ from .app_state import get_app_state, set_app_state
 from ..agent import AutonomousAgent
 from ..mcp import MCPServerManager
 from ..config import Settings
+from ..utils.logging import configure_logging
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +25,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    settings = Settings()
+    configure_logging(level=settings.log_level, format_type="colored" if settings.is_development else "structured", log_file=None)
     logger.info("Starting up application...")
     try:
-        settings = Settings()
         set_app_state("settings", settings)
         mcp_manager = MCPServerManager(settings)
         await mcp_manager.initialize()

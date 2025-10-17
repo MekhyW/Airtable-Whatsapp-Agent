@@ -141,40 +141,72 @@ webhook_handler = WhatsAppWebhookHandler()
 @router.get("/whatsapp")
 async def verify_webhook(request: Request, hub_mode: str = Query(alias="hub.mode"), hub_challenge: str = Query(alias="hub.challenge"), hub_verify_token: str = Query(alias="hub.verify_token")):
     """Verify WhatsApp webhook."""
-    logger.info(f"Webhook verification request: mode={hub_mode}, token={hub_verify_token}")
-    app_state = get_app_state()
-    settings = app_state.get("settings")
-    if not settings:
-        logger.error("Settings not available")
-        raise HTTPException(status_code=500, detail="Server configuration error")
-    if hub_verify_token != settings.whatsapp_webhook_verify_token:
-        logger.warning(f"Invalid verify token: {hub_verify_token}")
-        raise HTTPException(status_code=403, detail="Invalid verify token")
-    if hub_mode != "subscribe":
-        logger.warning(f"Invalid mode: {hub_mode}")
-        raise HTTPException(status_code=400, detail="Invalid mode")
-    logger.info("Webhook verification successful")
-    return PlainTextResponse(hub_challenge)
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"🔍 WEBHOOK VERIFICATION: {request.method} {request.url.path} from {client_ip}")
+    logger.info(f"🔍 Verification params - mode: {hub_mode}, challenge: {hub_challenge}, token: {'***' if hub_verify_token else 'None'}")
+    logger.debug(f"🔍 Full query params: {dict(request.query_params)}")
+    logger.debug(f"🔍 Headers: {dict(request.headers)}")
+    try:
+        app_state = get_app_state()
+        settings = app_state.get("settings")
+        if not settings:
+            logger.error("🔍 VERIFICATION FAILED: Settings not available")
+            raise HTTPException(status_code=500, detail="Server configuration error")
+        expected_token = settings.whatsapp_webhook_verify_token
+        logger.debug(f"🔍 Expected token configured: {'Yes' if expected_token else 'No'}")
+        if hub_verify_token != expected_token:
+            logger.warning(f"🔍 VERIFICATION FAILED: Invalid verify token received")
+            logger.debug(f"🔍 Token comparison - received: '{hub_verify_token}', expected: '{expected_token}'")
+            raise HTTPException(status_code=403, detail="Invalid verify token")
+        if hub_mode != "subscribe":
+            logger.warning(f"🔍 VERIFICATION FAILED: Invalid mode: {hub_mode}")
+            raise HTTPException(status_code=400, detail="Invalid mode")
+        logger.info(f"🔍 VERIFICATION SUCCESS: Returning challenge: {hub_challenge}")
+        return PlainTextResponse(hub_challenge)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"🔍 VERIFICATION ERROR: Unexpected error during webhook verification: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/whatsapp")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     """Handle WhatsApp webhook events."""
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"📨 WEBHOOK POST: {request.method} {request.url.path} from {client_ip}")
+    logger.debug(f"📨 Request headers: {dict(request.headers)}")
+    logger.debug(f"📨 Request URL: {request.url}")
     try:
         body = await request.body()
-        data = json.loads(body)
-        logger.info(f"🌐 Received WhatsApp webhook event")
-        logger.debug(f"Webhook payload: {json.dumps(data, indent=2)}")
-        event = WhatsAppWebhook(**data)
+        body_str = body.decode('utf-8', errors='replace') if body else ""
+        logger.info(f"📨 Received webhook body ({len(body)} bytes)")
+        logger.debug(f"📨 Raw body: {body_str}")
+        try:
+            data = json.loads(body)
+            logger.info(f"📨 Successfully parsed JSON payload")
+            logger.debug(f"📨 Parsed payload: {json.dumps(data, indent=2)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"📨 WEBHOOK ERROR: Invalid JSON in payload: {str(e)}")
+            logger.error(f"📨 Raw body that failed to parse: {body_str}")
+            raise HTTPException(status_code=400, detail="Invalid JSON")
+        try:
+            event = WhatsAppWebhook(**data)
+            logger.info(f"📨 Webhook event validated successfully")
+            logger.debug(f"📨 Event object: {event.object}, entries: {len(event.entry)}")
+        except Exception as e:
+            logger.error(f"📨 WEBHOOK ERROR: Invalid webhook structure: {str(e)}")
+            logger.error(f"📨 Data that failed validation: {json.dumps(data, indent=2)}")
+            raise HTTPException(status_code=400, detail=f"Invalid webhook structure: {str(e)}")
+        logger.info(f"📨 Starting webhook processing and queuing event")
         await webhook_handler.start_processing()
         background_tasks.add_task(webhook_handler.queue_event, event)
-        logger.info(f"✅ Webhook event accepted and queued for processing")
-        return {"status": "success"}
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in webhook payload: {str(e)}")
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        logger.info(f"📨 ✅ WEBHOOK SUCCESS: Event accepted and queued for processing")
+        return {"status": "success", "message": "Webhook event queued for processing"}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error handling webhook: {str(e)}", exc_info=True)
+        logger.error(f"📨 WEBHOOK ERROR: Unexpected error handling webhook: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

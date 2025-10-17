@@ -6,7 +6,6 @@ import time
 import logging
 import uuid
 from fastapi import FastAPI, Request, Response
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 
@@ -87,35 +86,42 @@ class WhatsAppWebhookMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.webhook_verify_token = webhook_verify_token
         self.expected_path_prefix = None
+        logger.info(f"🔧 Initializing WhatsApp webhook middleware with verify_token: {'***' if webhook_verify_token else 'None'}")
         try:
             if webhook_url:
                 from urllib.parse import urlparse
                 parsed = urlparse(webhook_url)
                 path = parsed.path or ""
                 self.expected_path_prefix = path.rstrip("/")
-        except Exception:
+                logger.info(f"🔧 Webhook URL path prefix set to: {self.expected_path_prefix}")
+        except Exception as e:
+            logger.warning(f"🔧 Failed to parse webhook URL: {e}")
             self.expected_path_prefix = None
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Validate WhatsApp webhook requests."""
-        expected_prefixes = ["/webhooks/whatsapp", "/api/v1/webhooks/whatsapp"]
-        if self.expected_path_prefix:
-            expected_prefixes.append(self.expected_path_prefix)
-        if not any(request.url.path.startswith(p) for p in expected_prefixes):
+        try:
+            if "/webhooks/whatsapp" in request.url.path:
+                logger.info(f"🌐 Webhook middleware processing: {request.method} {request.url.path}")
+                logger.debug(f"Query params: {dict(request.query_params)}")
+            expected_prefixes = ["/webhooks/whatsapp", "/api/v1/webhooks/whatsapp"]
+            if self.expected_path_prefix:
+                expected_prefixes.append(self.expected_path_prefix)
+            if not any(request.url.path.startswith(p) for p in expected_prefixes):
+                return await call_next(request)
+            if request.method == "GET":
+                logger.info(f"📋 Webhook verification request - passing to route handler")
+                return await call_next(request)
+            elif request.method == "POST":
+                logger.info(f"📨 Webhook POST request - processing")
+                # Verify signature if needed
+                # This would typically involve checking X-Hub-Signature-256 header
+                pass
             return await call_next(request)
-        verification_paths = {"/webhooks/whatsapp", "/api/v1/webhooks/whatsapp"}
-        if self.expected_path_prefix:
-            verification_paths.add(self.expected_path_prefix)
-        if request.method == "GET" and request.url.path in verification_paths:
-            verify_token = request.query_params.get("hub.verify_token")
-            if verify_token != self.webhook_verify_token:
-                logger.warning(f"Invalid webhook verify token: {verify_token}")
-                raise StarletteHTTPException(status_code=403, detail="Invalid verify token")
-        elif request.method == "POST":
-            # Verify signature if needed
-            # This would typically involve checking X-Hub-Signature-256 header
-            pass
-        return await call_next(request)
+        except Exception as e:
+            logger.error(f"❌ Error in webhook middleware: {str(e)}", exc_info=True)
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=500, content={"error": "Internal server error", "message": "Webhook middleware error"})
 
 
 def setup_middleware(app: FastAPI, webhook_verify_token: str = None, rate_limit_per_minute: int = 60, webhook_url: str = None):
