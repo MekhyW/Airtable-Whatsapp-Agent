@@ -60,7 +60,7 @@ WHATSAPP_BUSINESS_ACCOUNT_ID=your_business_account_id_here
 
 # Optional
 WHATSAPP_API_VERSION=v22.0
-LOG_LEVEL=info
+LOG_LEVEL=debug
 ```
 
 ### Getting WhatsApp Business API Credentials

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     settings = Settings()
-    configure_logging(level=settings.log_level, format_type="colored" if settings.is_development else "structured", log_file=None)
+    configure_logging(level="DEBUG", format_type="colored" if settings.is_development else "structured", log_file=None)
     logger.info("Starting up application...")
     try:
         set_app_state("settings", settings)
@@ -123,7 +123,7 @@ def create_app() -> FastAPI:
     return app
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False, log_level: str = "info"):
+def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False, log_level: str = "debug"):
     """Run the FastAPI server."""
     uvicorn.run(
         "airtable_whatsapp_agent.api.main:create_app",

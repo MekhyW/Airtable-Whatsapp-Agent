@@ -35,7 +35,7 @@ function testMCPServer() {
             WHATSAPP_PHONE_NUMBER_ID: "333848533154837",
             WHATSAPP_BUSINESS_ACCOUNT_ID: "406042695918539",
             WHATSAPP_API_VERSION: "v22.0",
-            LOG_LEVEL: "info"
+            LOG_LEVEL: "debug"
         };
 
         // Spawn the MCP server

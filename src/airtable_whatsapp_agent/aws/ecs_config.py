@@ -243,7 +243,7 @@ class ECSDeploymentConfig:
                 {"name": "ENVIRONMENT", "value": self.settings.environment},
                 {"name": "AWS_REGION", "value": self.region},
                 {"name": "WORKER_TYPE", "value": "background"},
-                {"name": "LOG_LEVEL", "value": "INFO"}
+                {"name": "LOG_LEVEL", "value": "DEBUG"}
             ],
             secrets=[
                 {
